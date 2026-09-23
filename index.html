@@ -149,6 +149,28 @@
   .prev { width: 100%; height: 4.5rem; border-radius: 8px; background: var(--field); position: relative; display: grid; place-items: center; overflow: hidden; }
   .prev .target { left: 50%; top: 50%; width: 38px; height: 38px; }
   #lvlNext { font-size: 0.82rem; color: var(--muted); }
+  .target.crystal { border-radius: 0; clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%); background: linear-gradient(135deg, color-mix(in srgb, var(--tc) 30%, white), var(--tc) 45%, color-mix(in srgb, var(--tc) 55%, black) 55%, var(--tc)); }
+  .target.core { background: radial-gradient(circle, #FFFFFF 0 14%, var(--tc) 30%, color-mix(in srgb, var(--tc) 40%, transparent) 60%, transparent 72%); box-shadow: 0 0 0 3px var(--tc); animation: corepulse 0.9s ease-in-out infinite alternate; }
+  @keyframes corepulse { to { box-shadow: 0 0 0 3px var(--tc), 0 0 22px var(--tc); } }
+  /* campaign */
+  .target.boss { clip-path: none; border-radius: 50%; border: none; background: radial-gradient(circle at 40% 35%, #FFD1D6, var(--miss) 45%, #5A1020); box-shadow: 0 0 0 4px rgb(255 122 122 / 0.35); animation: none; opacity: 1; }
+  .target.boss::after { display: none; }
+  .target.boss.real { animation: bosspulse 0.8s ease-in-out infinite alternate; }
+  @keyframes bosspulse { to { box-shadow: 0 0 0 9px rgb(255 122 122 / 0.55), 0 0 26px rgb(255 122 122 / 0.5); } }
+  #fog { position: absolute; inset: 0; z-index: 3; pointer-events: none; display: none; }
+  #bossBar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: min(28rem, 80%); z-index: 6; display: none; text-align: center; font-weight: 500; text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); pointer-events: none; }
+  #bossBar .bar { margin-top: 0.3rem; height: 0.8rem; }
+  #bossBar .bar > div { background: var(--miss); transition: width 0.2s; width: 100%; }
+  .world-head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+  .world-head span { color: var(--accent); font-variant-numeric: tabular-nums; }
+  .stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 0.6rem; margin-top: 0.8rem; }
+  .stage { border-radius: 12px; display: grid; gap: 0.15rem; justify-items: start; text-align: left; padding: 0.6rem 0.75rem; }
+  .stage small { color: var(--muted); }
+  .stage .st { color: var(--accent); letter-spacing: 0.12em; }
+  .stage.bosst { border-color: var(--miss); }
+  .stage:disabled { opacity: 0.45; cursor: not-allowed; }
+  .stage.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  #stageCard { border-color: var(--accent); }
   .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .lvl { display: grid; gap: 0.35rem; min-width: 14rem; flex: 1; max-width: 20rem; }
@@ -185,6 +207,8 @@
 
   <main id="field">
     <div id="xhair"></div>
+    <div id="fog"></div>
+    <div id="bossBar"><span id="bossName"></span><div class="bar"><div id="bossFill"></div></div></div>
     <div id="overlay">
       <div class="panel">
         <div class="top">
@@ -204,6 +228,7 @@
 
         <div class="tabs" role="tablist">
           <button role="tab" data-tab="play" aria-selected="true">Play</button>
+          <button role="tab" data-tab="campaign" aria-selected="false">Campaign <span id="campStars"></span></button>
           <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
           <button role="tab" data-tab="badges" aria-selected="false">Achievements <span id="badgeCount"></span></button>
           <button role="tab" data-tab="unlocks" aria-selected="false">Unlocks</button>
@@ -222,10 +247,14 @@
           <div class="res" id="resGrid"></div>
           <p class="pb" id="resPb" hidden></p>
           <p class="pb" id="resChallenge" hidden></p>
+          <p class="pb" id="resStage" hidden></p>
+          <p class="hint" id="resStory" hidden></p>
           <p class="hint" id="resXp"></p>
           <div class="row sub">
             <button class="primary" id="chSend">Challenge a friend</button>
             <button id="replay">Replay the same targets</button>
+            <button class="primary" id="nextStage" hidden>Next stage</button>
+            <button id="toCampaign" hidden>Back to campaign</button>
           </div>
         </section>
 
@@ -402,6 +431,18 @@
         <div class="row"><button class="primary big" data-start>Start</button></div>
         </div>
 
+        <div class="tabpane" id="tab-campaign" hidden>
+          <section class="card" id="stageCard" hidden>
+            <h2 id="stTitle"></h2>
+            <p id="stBlurb" style="margin:0 0 .6rem"></p>
+            <ul class="analysis-text" id="stRules"></ul>
+            <p class="hint" id="stGoals"></p>
+            <p class="hint" id="stBest"></p>
+            <div class="row sub"><button class="primary big" id="stStart">Start stage</button></div>
+          </section>
+          <div class="tabpane" id="worlds"></div>
+        </div>
+
         <div class="tabpane" id="tab-progress" hidden>
           <section class="card">
             <h2>Overall</h2>
@@ -460,6 +501,31 @@
 const SUPABASE_URL = "https://uuaulbxtygmnfardcfwx.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_MjWm0KAkShhDFun5DTLyfg_zgQRegeg";
 // ======================================
+
+// ===== Campaign story =====
+// Write your own story here! Everything in STORY is only text shown in the game.
+// Any field left as "" uses the plain default text instead.
+//   title     - world name, e.g. "World 1: ..."
+//   intro     - shown at the top of the world in the Campaign tab
+//   bossName  - shown above the boss health bar and on the boss stage
+//   bossIntro - shown when you select the boss stage
+//   victory   - shown after beating that world's boss
+const STORY = {
+  worlds: [
+    { title: "", intro: "", bossName: "", bossIntro: "", victory: "" },
+    { title: "", intro: "", bossName: "", bossIntro: "", victory: "" },
+    { title: "", intro: "", bossName: "", bossIntro: "", victory: "" },
+    { title: "", intro: "", bossName: "", bossIntro: "", victory: "" }
+  ],
+  // stage names and one-line descriptions, by stage number
+  stages: {
+    "1-1": { name: "", blurb: "" }, "1-2": { name: "", blurb: "" }, "1-3": { name: "", blurb: "" }, "1-4": { name: "", blurb: "" }, "1-5": { name: "", blurb: "" },
+    "2-1": { name: "", blurb: "" }, "2-2": { name: "", blurb: "" }, "2-3": { name: "", blurb: "" }, "2-4": { name: "", blurb: "" }, "2-5": { name: "", blurb: "" },
+    "3-1": { name: "", blurb: "" }, "3-2": { name: "", blurb: "" }, "3-3": { name: "", blurb: "" }, "3-4": { name: "", blurb: "" }, "3-5": { name: "", blurb: "" },
+    "4-1": { name: "", blurb: "" }, "4-2": { name: "", blurb: "" }, "4-3": { name: "", blurb: "" }, "4-4": { name: "", blurb: "" }, "4-5": { name: "", blurb: "" }
+  }
+};
+// ==========================
 
 const $ = id => document.getElementById(id);
 const field = $("field"), overlay = $("overlay");
@@ -745,7 +811,7 @@ function renderDaily() {
 function crosshairSVG(o, styleOverride) {
   const st0 = styleOverride || o.xStyle, st = st0 === "system" ? "crossdot" : st0;
   const L = o.xSize, T = o.xThick, G = o.xGap, col = o.xColor;
-  const reach = st === "dot" ? T : st === "pro" ? G + L + 4 : G + L;
+  const reach = st === "dot" ? T : st === "pro" ? G + L + 4 : st === "halo" ? G + L * 1.1 + T : st === "crown" ? G + L * 1.3 + T : G + L;
   const D = Math.ceil(reach * 2 + T * 2 + 10), c = D / 2;
   const rects = [], paths = [], circles = [];
   let spin = "";
@@ -784,6 +850,16 @@ function crosshairSVG(o, styleOverride) {
       dot(); break;
     }
     case "pro": cross(); circles.push(G + L + 3); dot(); break;
+    case "halo": {
+      circles.push(r);
+      [0, 90, 180, 270].forEach(deg => { const a = deg * Math.PI / 180; paths.push(`M${c + Math.cos(a) * (r + T)} ${c + Math.sin(a) * (r + T)}L${c + Math.cos(a) * (r + T + L * 0.45)} ${c + Math.sin(a) * (r + T + L * 0.45)}`); });
+      dot(); break;
+    }
+    case "crown": {
+      const top = c - G, h = L * 1.1, wd = L;
+      paths.push(`M${c - wd} ${top}L${c - wd} ${top - h}L${c - wd / 2} ${top - h * 0.55}L${c} ${top - h * 1.15}L${c + wd / 2} ${top - h * 0.55}L${c + wd} ${top - h}L${c + wd} ${top}Z`);
+      dot(); break;
+    }
     default: cross(); dot();
   }
   const pathEls = (w, stroke) => paths.map(d => `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linejoin="miter"/>`).join("")
@@ -797,7 +873,15 @@ function buildXhair() {
   $("xhair").innerHTML = svg; xSize = size;
   $("xPreview").innerHTML = S.xStyle === "system" ? `<span class="hint" style="text-align:center;font-size:.8rem">System cursor</span>` : svg;
 }
-function drawXhair() { if (cx !== null) $("xhair").style.transform = `translate(${cx - xSize / 2}px, ${cy - xSize / 2}px)`; }
+function drawXhair() {
+  if (cx === null) return;
+  $("xhair").style.transform = `translate(${cx - xSize / 2}px, ${cy - xSize / 2}px)`;
+  if (running && C && C.twists && C.twists.fog) {
+    const r = C.twists.fog;
+    $("fog").style.background = `radial-gradient(circle at ${cx}px ${cy}px, transparent ${r}px, var(--field) ${r + 60}px)`;
+  }
+}
+const mirrorAxes = () => running && C && C.twists ? C.twists.mirror || "" : "";
 
 // ---------- game state ----------
 let C = null, isDaily = false, rand = Math.random;
@@ -805,7 +889,7 @@ let running = false, startTime = 0, last = 0, hits = 0, misses = 0, expired = 0;
 let reactions = [], targets = [], timeouts = [];
 let onTime = 0, trackTime = 0, streak = 0, bestStreak = 0, held = false;
 let cx = null, cy = null, locked = false;
-let runSeed = 0, activeChallenge = null, lastPlay = null;
+let runSeed = 0, activeChallenge = null, lastPlay = null, activeStage = null;
 let shots = [], regionLog = [], trackSamples = [], nextSample = 0, fieldAspect = 0.6;
 let points = 0, combo = 0, bestCombo = 0, golds = 0, bombsHit = 0, bombsSpawned = 0;
 const comboMult = n => n >= 35 ? 4 : n >= 20 ? 3 : n >= 10 ? 2 : n >= 5 ? 1.5 : 1;
@@ -838,17 +922,28 @@ function spawn(lit = true) {
     y = y0 + rand() * Math.max(0, y1 - y0);
     if (targets.every(t => Math.hypot(t.x - x, t.y - y) >= r + t.size / 2 + C.spacing)) break;
   }
+  return spawnAt(x, y, size, type, lit);
+}
+let famSeq = 0;
+function spawnAt(x, y, size, type = "normal", lit = true) {
   const el = document.createElement("div");
   el.className = "target" + (S.style !== "solid" ? " " + S.style : "") + (lit ? "" : " decoy") + (type !== "normal" ? " " + type : "");
   el.style.width = el.style.height = size + "px";
   const angle = rand() * Math.PI * 2, now = performance.now();
-  const t = { el, x, y, size, scale: 1, lit, litAt: now, sx: cx ?? W / 2, sy: cy ?? H / 2, type,
-    vx: Math.cos(angle) * C.speed, vy: Math.sin(angle) * C.speed, nextTurn: now + C.turnEvery };
+  const t = { el, x, y, size, scale: 1, lit, litAt: now, sx: cx ?? field.clientWidth / 2, sy: cy ?? field.clientHeight / 2, type,
+    gen: 0, family: ++famSeq, vx: Math.cos(angle) * C.speed, vy: Math.sin(angle) * C.speed, nextTurn: now + C.turnEvery };
   place(t);
   field.appendChild(el);
   targets.push(t);
   return t;
 }
+function spawnChild(p, angle) {
+  const size = p.size * 0.62, d = p.size * 0.55, W = field.clientWidth, H = field.clientHeight;
+  const t = spawnAt(clamp(p.x + Math.cos(angle) * d, size / 2, W - size / 2), clamp(p.y + Math.sin(angle) * d, size / 2, H - size / 2), size);
+  t.gen = p.gen + 1; t.family = p.family; t.vx = p.vx; t.vy = p.vy; t.sx = cx; t.sy = cy;
+  return t;
+}
+const familyLeft = fam => targets.some(o => o.family === fam);
 function place(t) { t.el.style.left = t.x + "px"; t.el.style.top = t.y + "px"; }
 function setScale(t, s) { t.scale = s; t.el.style.transform = `translate(-50%, -50%) scale(${s})`; }
 function removeTarget(t) { t.el.remove(); targets = targets.filter(o => o !== t); }
@@ -868,12 +963,18 @@ function lightRandom(exclude) {
   if (pool.length) light(pool[Math.floor(rand() * pool.length)]);
 }
 
-function pointerPos(e) { const r = field.getBoundingClientRect(); cx = e.clientX - r.left; cy = e.clientY - r.top; }
+function pointerPos(e) {
+  const r = field.getBoundingClientRect(), m = mirrorAxes();
+  cx = e.clientX - r.left; cy = e.clientY - r.top;
+  if (m.includes("x")) cx = field.clientWidth - cx;
+  if (m.includes("y")) cy = field.clientHeight - cy;
+}
 field.addEventListener("pointermove", e => { if (!locked) { pointerPos(e); drawXhair(); } });
 document.addEventListener("mousemove", e => {
   if (!locked) return;
-  cx = clamp(cx + e.movementX * S.sens, 0, field.clientWidth);
-  cy = clamp(cy + e.movementY * S.sens, 0, field.clientHeight);
+  const m = mirrorAxes();
+  cx = clamp(cx + e.movementX * S.sens * (m.includes("x") ? -1 : 1), 0, field.clientWidth);
+  cy = clamp(cy + e.movementY * S.sens * (m.includes("y") ? -1 : 1), 0, field.clientHeight);
   drawXhair();
 });
 field.addEventListener("pointerdown", e => {
@@ -914,15 +1015,74 @@ function shoot() {
   }
 }
 function hitBomb(t) {
-  misses++; bombsHit++; points -= 250; breakCombo();
-  floatText(t.x, t.y, "-250", "bad big");
+  misses++; bombsHit++; breakCombo();
+  if (C.boss) { healBoss(3); floatText(t.x, t.y, "+3 boss HP", "bad big"); }
+  else { points -= 250; floatText(t.x, t.y, "-250", "bad big"); }
   playSound("bomb");
   removeTarget(t);
   updateHud();
   if (C.missEnds) return end();
-  queueSpawn();
+  if (!C.boss) queueSpawn();
+}
+let bossHp = 0, bossMax = 0, bossPhase = 1, bossWon = false, nextBombAt = 0, nextSwapAt = 0;
+const PHASE_SPEED = [0, 1, 1.35, 1.7], PHASE_BOMB = [0, 1, 0.75, 0.55];
+function spawnBoss() {
+  const B = C.boss, W = field.clientWidth, H = field.clientHeight, n = 1 + (B.clones || 0), now = performance.now();
+  C.speed = B.speed;
+  for (let i = 0; i < n; i++) {
+    const t = spawnAt(W * (0.25 + 0.5 * rand()), H * (0.25 + 0.5 * rand()), B.size, "boss");
+    const a = rand() * Math.PI * 2;
+    t.boss = true; t.real = i === 0; t.vx = Math.cos(a) * B.speed; t.vy = Math.sin(a) * B.speed; t.nextTurn = now + C.turnEvery;
+    if (t.real) t.el.classList.add("real");
+  }
+  bossMax = bossHp = B.hp; bossPhase = 1; bossWon = false;
+  nextBombAt = now + (B.bombEvery || 0); nextSwapAt = now + (B.swapEvery || 0);
+}
+function moveReal() {
+  const bs = targets.filter(t => t.boss);
+  if (bs.length < 2) return;
+  const cur = bs.find(t => t.real), others = bs.filter(t => t !== cur), next = others[Math.floor(rand() * others.length)];
+  if (cur) { cur.real = false; cur.el.classList.remove("real"); }
+  next.real = true; next.el.classList.add("real");
+}
+function spawnBossBomb() {
+  const W = field.clientWidth, H = field.clientHeight;
+  const t = spawnAt(40 + rand() * (W - 80), 40 + rand() * (H - 80), 46, "bomb");
+  t.vx = t.vy = 0; bombsSpawned++;
+}
+function updateBoss() {
+  const B = C.boss, frac = Math.max(0, bossHp / bossMax);
+  $("bossFill").style.width = frac * 100 + "%";
+  const size = B.minSize + (B.size - B.minSize) * frac;
+  targets.forEach(t => { if (t.boss) { t.size = size; t.el.style.width = t.el.style.height = size + "px"; } });
+  const ph = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  if (ph > bossPhase) {
+    const f = PHASE_SPEED[ph] / PHASE_SPEED[bossPhase];
+    bossPhase = ph; C.speed *= f;
+    targets.forEach(t => { if (t.boss) { t.vx *= f; t.vy *= f; } });
+    if (C.kind === "track") C.turnEvery = Math.max(250, C.turnEvery * 0.75);
+    const b = targets.find(t => t.boss);
+    if (b) floatText(b.x, b.y - b.size / 2 - 12, "Phase " + ph + "!", "bad big");
+    if (ph === 3 && B.fogPhase3) { C.twists.fog = B.fogPhase3; $("fog").style.display = "block"; drawXhair(); }
+  }
+}
+function healBoss(n) { bossHp = Math.min(bossMax, bossHp + n); updateBoss(); }
+function bossHit(t) {
+  if (!t.real) { misses++; healBoss(1); breakCombo(); floatText(t.x, t.y, "Fake! +1 HP", "bad"); updateHud(); return; }
+  hits++; bossHp -= 1;
+  floatText(t.x, t.y - t.size / 2, "-1");
+  if (S.hitEffect) {
+    const p = document.createElement("div");
+    p.className = "pop"; p.style.left = t.x + "px"; p.style.top = t.y + "px"; p.style.width = p.style.height = t.size + "px";
+    field.appendChild(p); setTimeout(() => p.remove(), 300);
+  }
+  playSound("hit");
+  if (C.boss.clones) moveReal();
+  updateBoss(); updateHud();
+  if (bossHp <= 0) { bossWon = true; end(); }
 }
 function hit(t, now) {
+  if (t.boss) return bossHit(t);
   reactions.push(now - t.litAt);
   regionLog.push({ x: t.x / field.clientWidth, y: t.y / field.clientHeight, ms: now - t.litAt });
   hits++;
@@ -947,6 +1107,8 @@ function hit(t, now) {
   removeTarget(t);
   updateHud();
   if (C.mode === "hits" && hits >= C.goal) return end();
+  if (C.twists.split && t.gen < C.twists.split) { const a = rand() * Math.PI * 2; spawnChild(t, a); spawnChild(t, a + Math.PI); return; }
+  if (C.twists.split && familyLeft(t.family)) return;
   if (C.kind === "switch") lightRandom(spawn(false)); else queueSpawn();
 }
 
@@ -960,8 +1122,12 @@ function loop(now) {
   } else $("tVal").textContent = elapsed.toFixed(1);
 
   const W = field.clientWidth, H = field.clientHeight;
+  if (C.boss && C.kind !== "track") {
+    if (C.boss.bombEvery && now >= nextBombAt) { nextBombAt = now + C.boss.bombEvery * PHASE_BOMB[bossPhase]; spawnBossBomb(); }
+    if (C.boss.clones && now >= nextSwapAt) { nextSwapAt = now + C.boss.swapEvery; moveReal(); }
+  }
   for (const t of [...targets]) {
-    if (t.type === "bomb" && now - t.litAt >= 1800) { removeTarget(t); queueSpawn(); continue; }
+    if (t.type === "bomb" && now - t.litAt >= 1800) { removeTarget(t); if (!C.boss) queueSpawn(); continue; }
     if (t.type === "golden" && now - t.litAt >= Math.min(C.lifetime || Infinity, 1300)) {
       if (C.kind === "switch") { unlight(t); lightRandom(t); } else { removeTarget(t); queueSpawn(); continue; }
     }
@@ -969,10 +1135,17 @@ function loop(now) {
       expired++;
       if (C.extras) breakCombo();
       if (C.kind === "switch") { unlight(t); lightRandom(t); }
-      else { removeTarget(t); queueSpawn(); continue; }
+      else { removeTarget(t); if (!(C.twists.split && familyLeft(t.family))) queueSpawn(); continue; }
     }
-    if (C.speed > 0) {
-      if (C.kind === "track" && now >= t.nextTurn) {
+    if (C.twists.dodge && t.lit && t.type !== "bomb" && cx !== null) {
+      const dx = t.x - cx, dy = t.y - cy, d = Math.hypot(dx, dy) || 1, trig = t.size / 2 + 70;
+      if (d < trig) {
+        const sp = C.twists.dodge * dt * (1.3 - d / trig), r = t.size / 2;
+        t.x = clamp(t.x + dx / d * sp, r, W - r); t.y = clamp(t.y + dy / d * sp, r, H - r); place(t);
+      }
+    }
+    if (C.speed > 0 && !(C.boss && t.type === "bomb")) {
+      if ((C.kind === "track" || t.boss) && now >= t.nextTurn) {
         const a = Math.atan2(t.vy, t.vx) + (rand() - 0.5) * Math.PI * 1.6;
         t.vx = Math.cos(a) * C.speed; t.vy = Math.sin(a) * C.speed;
         t.nextTurn = now + C.turnEvery * (0.6 + rand() * 0.8);
@@ -994,6 +1167,7 @@ function loop(now) {
     trackTime += dt;
     if (on) { onTime += dt; streak += dt; bestStreak = Math.max(bestStreak, streak); } else streak = 0;
     if (t) t.el.classList.toggle("on", on);
+    if (C.boss && on) { bossHp -= dt; updateBoss(); if (bossHp <= 0) { bossWon = true; return end(); } }
     if (t && cx !== null && now >= nextSample) {
       nextSample = now + 100;
       const r = t.size / 2, ox = (cx - t.x) / r, oy = (cy - t.y) / r, v = Math.hypot(t.vx, t.vy) || 1;
@@ -1010,7 +1184,12 @@ function setSlot(i, label, value) {
   if (label !== null) { el.firstElementChild.textContent = label; el.lastElementChild.textContent = value; }
 }
 function updateHud() {
-  if (C && C.kind === "track") {
+  if (C && C.boss) {
+    const track = C.kind === "track";
+    setSlot(1, "Boss HP", track ? Math.max(0, bossHp).toFixed(1) + "s" : Math.max(0, bossHp) + "/" + bossMax);
+    setSlot(2, track ? "On target" : "Hits", track ? (trackTime ? onTime / trackTime * 100 : 0).toFixed(1) + "%" : hits);
+    setSlot(3, track ? null : "Accuracy", hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–");
+  } else if (C && C.kind === "track") {
     setSlot(1, "On target", (trackTime ? onTime / trackTime * 100 : 0).toFixed(1) + "%");
     setSlot(2, "Streak", streak.toFixed(1) + "s");
     setSlot(3, null);
@@ -1030,10 +1209,14 @@ function start(daily = false, opts = {}) {
   if (running) return;
   readForm();
   isDaily = daily;
-  C = normalize(daily ? { ...S, ...dailySetup() } : opts.setup ? { ...S, ...opts.setup } : { ...S });
-  runSeed = daily ? hashStr(todayKey() + "-spawns") : (opts.seed ?? Math.floor(Math.random() * 4294967296)) >>> 0;
+  const stage = !daily && opts.campaign ? opts.campaign : null;
+  C = normalize(daily ? { ...S, ...dailySetup() } : stage ? { ...S, ...SETUP_DEFAULTS, ...stage.setup } : opts.setup ? { ...S, ...opts.setup } : { ...S });
+  C.twists = { fog: 0, mirror: "", dodge: 0, split: 0, ...(stage && stage.twists || {}) };
+  C.boss = stage && stage.boss ? { ...stage.boss } : null;
+  activeStage = stage;
+  runSeed = daily ? hashStr(todayKey() + "-spawns") : stage ? hashStr("stage-" + stage.id) : (opts.seed ?? Math.floor(Math.random() * 4294967296)) >>> 0;
   rand = mulberry32(runSeed);
-  activeChallenge = daily ? null : (opts.challenge || null);
+  activeChallenge = daily || stage ? null : (opts.challenge || null);
   hits = misses = expired = 0; reactions = []; onTime = trackTime = streak = bestStreak = 0;
   shots = []; regionLog = []; trackSamples = []; nextSample = 0;
   points = combo = bestCombo = golds = bombsHit = bombsSpawned = 0;
@@ -1041,7 +1224,10 @@ function start(daily = false, opts = {}) {
   $("tLbl").textContent = C.mode === "time" ? "Time left" : "Time";
   overlay.style.display = "none";
   $("stop").style.display = "inline-block";
-  const custom = S.xStyle !== "system" || S.lock;
+  const custom = S.xStyle !== "system" || S.lock || !!C.twists.mirror;
+  $("fog").style.display = C.twists.fog ? "block" : "none";
+  $("bossBar").style.display = C.boss ? "block" : "none";
+  if (C.boss) { $("bossName").textContent = bossName(stage); $("bossFill").style.width = "100%"; }
   field.style.cursor = custom ? "none" : "crosshair";
   $("xhair").style.display = custom ? "block" : "none";
   cx = field.clientWidth / 2; cy = field.clientHeight / 2; drawXhair();
@@ -1051,7 +1237,8 @@ function start(daily = false, opts = {}) {
   }
   startTime = last = performance.now();
   updateHud();
-  if (C.kind === "switch") { for (let i = 0; i < C.count; i++) spawn(false); lightRandom(); }
+  if (C.boss) spawnBoss();
+  else if (C.kind === "switch") { for (let i = 0; i < C.count; i++) spawn(false); lightRandom(); }
   else if (C.kind === "track") spawn();
   else for (let i = 0; i < C.count; i++) spawn();
   requestAnimationFrame(loop);
@@ -1070,11 +1257,21 @@ function end() {
   timeouts.forEach(clearTimeout); timeouts = [];
   targets.forEach(t => t.el.remove()); targets = [];
   $("xhair").style.display = "none";
+  $("fog").style.display = "none";
+  $("bossBar").style.display = "none";
   field.style.cursor = "";
   fieldAspect = field.clientHeight / Math.max(1, field.clientWidth);
 
   let run, shown, valid;
-  if (C.kind === "track") {
+  if (C.boss) {
+    const left = Math.max(0, C.duration - secs), track = C.kind === "track", pct = trackTime ? onTime / trackTime * 100 : 0;
+    run = { kind: C.kind, boss: true, won: bossWon, left: +left.toFixed(1), hits, misses, pct: +pct.toFixed(2),
+      acc: track ? Math.round(pct) : hits + misses ? Math.round(hits / (hits + misses) * 100) : 100,
+      score: bossWon ? Math.round(1000 + left * 100) : 0, secs: +secs.toFixed(2) };
+    shown = [["Result", bossWon ? "Defeated!" : "It got away"], ["Time left", bossWon ? left.toFixed(1) + " s" : "–"],
+      ...(track ? [["On target", pct.toFixed(1) + "%"]] : [["Hits", hits], ["Misses", misses], ["Accuracy", hits + misses ? run.acc + "%" : "–"]])];
+    valid = true;
+  } else if (C.kind === "track") {
     const pct = trackTime > 0 ? +(onTime / trackTime * 100).toFixed(2) : 0;
     run = { kind: "track", pct, score: Math.round(pct * 100), acc: Math.round(pct), secs: +secs.toFixed(2), streak: +bestStreak.toFixed(1) };
     shown = [["Score", run.score], ["On target", pct.toFixed(1) + "%"], ["Longest streak", bestStreak.toFixed(1) + " s"], ["Time", secs.toFixed(1) + " s"]];
@@ -1092,9 +1289,11 @@ function end() {
   }
   run.k = setupKey(C); run.b = bucketOf(C); run.t = Date.now(); run.daily = isDaily ? todayKey() : null;
   run.lbl = runLabel(C, run);
-  lastPlay = { daily: isDaily, setup: setupOf(C), seed: runSeed, challenge: activeChallenge };
+  lastPlay = { daily: isDaily, setup: setupOf(C), seed: runSeed, challenge: activeChallenge, campaign: activeStage };
 
-  $("resTitle").textContent = isDaily ? "Last run: daily challenge" : activeChallenge ? `Last run: challenge from ${activeChallenge.name}` : "Last run: " + run.lbl;
+  $("resStage").hidden = true; $("resStory").hidden = true; $("nextStage").hidden = true; $("toCampaign").hidden = true;
+  $("replay").textContent = activeStage ? "Retry stage" : "Replay the same targets";
+  $("resTitle").textContent = activeStage ? `Stage ${activeStage.id}: ${stageName(activeStage)}` : isDaily ? "Last run: daily challenge" : activeChallenge ? `Last run: challenge from ${activeChallenge.name}` : "Last run: " + run.lbl;
   const grid = $("resGrid");
   grid.innerHTML = "";
   shown.forEach(([l, v]) => {
@@ -1108,6 +1307,7 @@ function end() {
   showTab("play");
   overlay.scrollTop = 0;
 
+  if (activeStage) return finishStage(run);
   if (!valid) {
     lastRun = null;
     $("analysis").style.display = "none";
@@ -1185,6 +1385,7 @@ const SOUNDS = {
   drum:    (a, t, v) => { tone(a, t, 170 * v, 0.18, "sine", 0.4, 45); noise(a, t, 0.05, 0.12, "lowpass", 1500); },
   chime:   (a, t, v) => { tone(a, t, 1046 * v, 0.4, "triangle", 0.1); tone(a, t + 0.05, 1568 * v, 0.5, "triangle", 0.07); },
   arcade:  (a, t, v) => [523, 659, 784, 1046].forEach((f, i) => tone(a, t + i * 0.04, f * v, 0.06, "square", 0.045)),
+  victory: (a, t, v) => { [523, 659, 784].forEach(f => tone(a, t, f * v, 0.35, "triangle", 0.06)); tone(a, t + 0.1, 1046 * v, 0.4, "triangle", 0.07); },
   fanfare: (a, t, v) => { tone(a, t, 523 * v, 0.08, "triangle", 0.1); tone(a, t + 0.08, 659 * v, 0.08, "triangle", 0.1); tone(a, t + 0.16, 784 * v, 0.22, "triangle", 0.1); }
 };
 function playSound(kind) {
@@ -1498,6 +1699,11 @@ const ACH = [
   { id: "combo30", name: "Combo master", desc: "Reach a 30 hit combo with arcade extras on.", test: c => c.run && c.bestCombo >= 30 },
   { id: "goldrush", name: "Gold rush", desc: "Hit 10 golden targets in one run.", test: c => c.run && c.golds >= 10 },
   { id: "bombsquad", name: "Bomb squad", desc: "Dodge every bomb in a 30+ second run (at least 5 bombs).", test: c => c.run && c.run.secs >= 30 && c.bombsSpawned >= 5 && c.bombsHit === 0 },
+  { id: "star1", name: "First star", desc: "Earn a campaign star.", test: () => totalStars() >= 1 },
+  { id: "boss1", name: "Boss slayer", desc: "Defeat a campaign boss.", test: () => Object.keys(camp.beaten).length >= 1 },
+  { id: "world1", name: "World cleared", desc: "Earn a star on every stage of a campaign world.", test: () => CAMPAIGN.some(w => w.stages.every(st => (camp.stars[st.id] || 0) > 0)) },
+  { id: "perfect", name: "Perfectionist", desc: "Earn 3 stars on every stage of a campaign world.", test: () => CAMPAIGN.some(w => w.stages.every(st => camp.stars[st.id] === 3)) },
+  { id: "campaign", name: "Campaign complete", desc: "Defeat the final boss.", test: () => !!camp.beaten["4-B"] },
   { id: "lvl10", name: "Rising star", desc: "Reach level 10.", test: (c, s) => s.level >= 10, goal: s => [s.level, 10] },
   { id: "lvl25", name: "Veteran", desc: "Reach level 25.", test: (c, s) => s.level >= 25, goal: s => [s.level, 25] }
 ];
@@ -1542,6 +1748,178 @@ function toast(title, body) {
   setTimeout(() => t.remove(), 4500);
 }
 
+// ---------- campaign ----------
+const WORLD_DEFAULTS = [
+  { title: "World 1: Clicking", intro: "Hit targets quickly and cleanly, then take on the first boss.", bossName: "The Sentinel", victory: "World 1 cleared!" },
+  { title: "World 2: Switching", intro: "Only the lit target counts, and the wrong one costs you.", bossName: "The Imposter", victory: "World 2 cleared!" },
+  { title: "World 3: Tracking", intro: "Stay locked on moving targets for as long as you can.", bossName: "The Phantom", victory: "World 3 cleared!" },
+  { title: "World 4: Gauntlet", intro: "Everything from the first three worlds, mixed together.", bossName: "The Warden", victory: "Campaign complete!" }
+];
+const WORLD_REQ = [0, 8, 18, 30];
+const CAMPAIGN = [
+  { stages: [
+    { id: "1-1", name: "First contact", blurb: "One big target at a time. Get comfortable.", setup: { kind: "click", size: 60 }, stars: [1500, 2500, 3500] },
+    { id: "1-2", name: "Three at once", blurb: "Three targets on screen. Clear them fast.", setup: { kind: "click", count: 3, size: 50, area: 70, spacing: 20 }, stars: [2000, 3200, 4400] },
+    { id: "1-3", name: "Shrink", blurb: "Targets shrink and vanish. Don't hesitate.", setup: { kind: "click", size: 55, lifetime: 1400, sizeMode: "shrink" }, stars: [1200, 2200, 3000] },
+    { id: "1-4", name: "Fog", blurb: "You can only see what's near your crosshair.", setup: { kind: "click", count: 2, size: 50 }, twists: { fog: 150 }, stars: [1000, 2000, 2800] },
+    { id: "1-5", name: "Splitters", blurb: "Big targets break apart when you hit them.", setup: { kind: "click", size: 80 }, twists: { split: 2 }, stars: [1800, 3000, 4200] },
+    { id: "1-B", name: "Boss", setup: { kind: "click", duration: 60, turnEvery: 1400 }, boss: { hp: 25, size: 150, minSize: 60, speed: 140, bombEvery: 3000 }, stars: [0, 25, 38] }
+  ] },
+  { stages: [
+    { id: "2-1", name: "Pick the light", blurb: "Three targets. Only the lit one counts.", setup: { kind: "switch", count: 3, size: 55 }, stars: [1500, 2500, 3500] },
+    { id: "2-2", name: "Crowded", blurb: "More decoys, smaller targets.", setup: { kind: "switch", count: 5, size: 45 }, stars: [1200, 2200, 3200] },
+    { id: "2-3", name: "Quick switch", blurb: "The light moves on if you're too slow.", setup: { kind: "switch", count: 4, size: 50, lifetime: 1200 }, stars: [1000, 1900, 2800] },
+    { id: "2-4", name: "Mirror", blurb: "Left is right and right is left.", setup: { kind: "switch", count: 3, size: 55 }, twists: { mirror: "x" }, stars: [600, 1400, 2200] },
+    { id: "2-5", name: "Slippery", blurb: "Lit targets slide away from your crosshair.", setup: { kind: "switch", count: 4, size: 50 }, twists: { dodge: 180 }, stars: [800, 1600, 2400] },
+    { id: "2-B", name: "Boss", setup: { kind: "click", duration: 60, turnEvery: 1400 }, boss: { hp: 20, size: 110, minSize: 55, speed: 120, clones: 3, swapEvery: 2500, bombEvery: 0 }, stars: [0, 20, 32] }
+  ] },
+  { stages: [
+    { id: "3-1", name: "Follow", blurb: "A slow target. Keep your crosshair on it.", setup: { kind: "track", size: 60, speed: 200, turnEvery: 800 }, stars: [5000, 7000, 8500] },
+    { id: "3-2", name: "Faster", blurb: "Same idea, more speed.", setup: { kind: "track", size: 55, speed: 320, turnEvery: 600 }, stars: [4000, 6000, 7500] },
+    { id: "3-3", name: "Jittery", blurb: "It changes direction constantly.", setup: { kind: "track", size: 55, speed: 300, turnEvery: 300 }, stars: [3500, 5500, 7000] },
+    { id: "3-4", name: "Fog chase", blurb: "Track it through the fog.", setup: { kind: "track", size: 55, speed: 260, turnEvery: 600 }, twists: { fog: 130 }, stars: [3000, 5000, 6500] },
+    { id: "3-5", name: "Mirror chase", blurb: "Track it with a mirrored mouse.", setup: { kind: "track", size: 60, speed: 220, turnEvery: 700 }, twists: { mirror: "x" }, stars: [2500, 4500, 6000] },
+    { id: "3-B", name: "Boss", setup: { kind: "track", duration: 45, turnEvery: 700 }, boss: { hp: 14, size: 110, minSize: 45, speed: 240 }, stars: [0, 12, 20] }
+  ] },
+  { stages: [
+    { id: "4-1", name: "Arcade", blurb: "Combos, golden targets and bombs.", setup: { kind: "click", count: 2, size: 45, extras: true, goldChance: 15, bombChance: 15 }, stars: [3000, 5000, 7000] },
+    { id: "4-2", name: "Dodge and split", blurb: "Targets dodge you, then split when hit.", setup: { kind: "click", size: 70 }, twists: { split: 1, dodge: 140 }, stars: [1500, 2600, 3600] },
+    { id: "4-3", name: "Blind switch", blurb: "Find the lit target in the fog.", setup: { kind: "switch", count: 4, size: 50 }, twists: { fog: 140 }, stars: [900, 1800, 2700] },
+    { id: "4-4", name: "Upside down", blurb: "Both directions are mirrored.", setup: { kind: "click", count: 2, size: 50 }, twists: { mirror: "xy" }, stars: [600, 1400, 2200] },
+    { id: "4-5", name: "Everything", blurb: "Shrinking, dodging targets in the fog.", setup: { kind: "click", count: 2, size: 50, lifetime: 1600, sizeMode: "shrink" }, twists: { fog: 170, dodge: 120 }, stars: [700, 1500, 2300] },
+    { id: "4-B", name: "Boss", setup: { kind: "click", duration: 75, turnEvery: 1200 }, twists: { dodge: 160 }, boss: { hp: 35, size: 140, minSize: 55, speed: 150, bombEvery: 2200, fogPhase3: 180 }, stars: [0, 25, 40] }
+  ] }
+];
+CAMPAIGN.forEach((w, wi) => w.stages.forEach((st, i) => { st.w = wi; st.i = i; }));
+const ALL_STAGES = CAMPAIGN.flatMap(w => w.stages);
+
+let camp = {};
+try { camp = JSON.parse(localStorage.getItem("aimCampaign") || "{}") || {}; } catch {}
+if (!camp.stars || typeof camp.stars !== "object") camp.stars = {};
+if (!camp.best || typeof camp.best !== "object") camp.best = {};
+if (!camp.beaten || typeof camp.beaten !== "object") camp.beaten = {};
+function saveCamp() { try { localStorage.setItem("aimCampaign", JSON.stringify(camp)); } catch {} }
+const totalStars = () => ALL_STAGES.reduce((a, st) => a + (camp.stars[st.id] || 0), 0);
+const storyW = (wi, key) => (STORY.worlds[wi] && STORY.worlds[wi][key]) || WORLD_DEFAULTS[wi][key] || "";
+function stageName(st) { if (st.boss) return storyW(st.w, "bossName"); return (STORY.stages[st.id] && STORY.stages[st.id].name) || st.name; }
+function stageBlurb(st) { if (st.boss) return storyW(st.w, "bossIntro") || "Boss stage. Beat it before time runs out."; return (STORY.stages[st.id] && STORY.stages[st.id].blurb) || st.blurb; }
+const bossName = st => st ? storyW(st.w, "bossName") : "Boss";
+function stageUnlocked(st) {
+  if (totalStars() < WORLD_REQ[st.w]) return false;
+  const list = CAMPAIGN[st.w].stages;
+  if (st.boss) return list.filter(x => !x.boss).every(x => (camp.stars[x.id] || 0) > 0);
+  return st.i === 0 || (camp.stars[list[st.i - 1].id] || 0) > 0;
+}
+function nextStageOf(st) { const i = ALL_STAGES.indexOf(st); return ALL_STAGES[i + 1] || null; }
+function starsFor(st, run) {
+  if (st.boss) return run.won ? 1 + (run.left >= st.stars[1]) + (run.left >= st.stars[2]) : 0;
+  return run.score >= st.stars[2] ? 3 : run.score >= st.stars[1] ? 2 : run.score >= st.stars[0] ? 1 : 0;
+}
+const starStr = n => "★".repeat(n) + "☆".repeat(3 - n);
+function twistLines(t) {
+  const out = [];
+  if (!t) return out;
+  if (t.fog) out.push("Fog: you can only see targets near your crosshair.");
+  if (t.mirror === "x") out.push("Mirror: your mouse moves left and right backwards.");
+  if (t.mirror === "xy") out.push("Mirror: your mouse is reversed in every direction.");
+  if (t.dodge) out.push("Dodgy: targets slide away from your crosshair.");
+  if (t.split) out.push(t.split > 1 ? "Splitters: targets break into smaller targets twice." : "Splitters: targets break into two smaller targets when hit.");
+  return out;
+}
+function bossLines(st) {
+  const B = st.boss, out = [];
+  if (st.setup.kind === "track") out.push(`Keep your crosshair on it to drain its health. It has ${B.hp} seconds of health.`);
+  else out.push(`${B.hp} health. Every hit takes 1.`);
+  out.push("It gets smaller and faster as it takes damage.");
+  if (B.clones) out.push(`It has ${B.clones} lookalikes. The real one pulses, and hitting a fake heals it.`);
+  if (B.bombEvery) out.push("It drops bombs. Hitting one heals it by 3.");
+  if (B.fogPhase3) out.push("In its last phase, fog rolls in.");
+  out.push(`You have ${st.setup.duration} seconds.`);
+  return out;
+}
+let selStage = null;
+function renderStageCard(st) {
+  $("stageCard").hidden = false;
+  $("stTitle").textContent = `Stage ${st.id}: ${stageName(st)}`;
+  $("stBlurb").textContent = stageBlurb(st);
+  const ul = $("stRules");
+  ul.innerHTML = "";
+  const lines = st.boss ? [...bossLines(st), ...twistLines(st.twists)] : [describeSetup(normalize({ ...SETUP_DEFAULTS, ...st.setup })), ...twistLines(st.twists)];
+  lines.forEach(l => { const li = document.createElement("li"); li.textContent = l; ul.appendChild(li); });
+  $("stGoals").textContent = st.boss
+    ? `★ Defeat it. ★★ With ${st.stars[1]} s left. ★★★ With ${st.stars[2]} s left.`
+    : `★ ${st.stars[0]} points. ★★ ${st.stars[1]} points. ★★★ ${st.stars[2]} points.`;
+  const got = camp.stars[st.id] || 0, best = camp.best[st.id];
+  $("stBest").textContent = got ? `Your best: ${starStr(got)}` + (best != null ? (st.boss ? `, beaten with ${best} s left.` : `, ${best} points.`) : ".") : "Not cleared yet.";
+}
+function renderCampaign() {
+  $("campStars").textContent = "★ " + totalStars();
+  const box = $("worlds"), total = totalStars();
+  box.innerHTML = "";
+  CAMPAIGN.forEach((w, wi) => {
+    const sec = document.createElement("section");
+    sec.className = "card";
+    const got = w.stages.reduce((a, st) => a + (camp.stars[st.id] || 0), 0);
+    const head = document.createElement("div"); head.className = "world-head";
+    const h = document.createElement("h2"); h.textContent = storyW(wi, "title"); h.style.margin = "0";
+    const sp = document.createElement("span"); sp.textContent = `★ ${got}/${w.stages.length * 3}`;
+    head.append(h, sp);
+    const intro = document.createElement("p"); intro.className = "hint"; intro.textContent = storyW(wi, "intro");
+    sec.append(head, intro);
+    if (total < WORLD_REQ[wi]) { const lk = document.createElement("p"); lk.textContent = `Earn ${WORLD_REQ[wi]} stars to unlock this world. You have ${total}.`; sec.appendChild(lk); }
+    const grid = document.createElement("div"); grid.className = "stages";
+    w.stages.forEach(st => {
+      const b = document.createElement("button");
+      b.className = "stage" + (st.boss ? " bosst" : "") + (selStage === st ? " sel" : "");
+      b.disabled = !stageUnlocked(st);
+      const n = document.createElement("small"); n.textContent = st.boss ? `${st.id} Boss` : st.id;
+      const nm = document.createElement("strong"); nm.textContent = stageName(st); nm.style.fontWeight = "500";
+      const stars = document.createElement("span"); stars.className = "st"; stars.textContent = starStr(camp.stars[st.id] || 0);
+      b.append(n, nm, stars);
+      b.addEventListener("click", () => { selStage = st; renderCampaign(); if ($("stageCard").scrollIntoView) $("stageCard").scrollIntoView({ block: "start", behavior: "smooth" }); });
+      grid.appendChild(b);
+    });
+    sec.appendChild(grid);
+    box.appendChild(sec);
+  });
+  if (selStage) renderStageCard(selStage); else $("stageCard").hidden = true;
+}
+$("stStart").addEventListener("click", () => { if (selStage && stageUnlocked(selStage)) start(false, { campaign: selStage }); });
+$("nextStage").addEventListener("click", () => { const n = lastPlay && lastPlay.campaign && nextStageOf(lastPlay.campaign); if (n && stageUnlocked(n)) { selStage = n; start(false, { campaign: n }); } });
+$("toCampaign").addEventListener("click", () => showTab("campaign"));
+
+function finishStage(run) {
+  const st = activeStage, stars = starsFor(st, run), before = totalStars(), prev = camp.stars[st.id] || 0;
+  if (stars > prev) camp.stars[st.id] = stars;
+  if (st.boss) { if (run.won) { camp.beaten[st.id] = true; if (run.left > (camp.best[st.id] ?? -1)) camp.best[st.id] = run.left; } }
+  else if (run.score > (camp.best[st.id] || 0)) camp.best[st.id] = run.score;
+  saveCamp();
+  const el = $("resStage");
+  el.textContent = stars
+    ? `${starStr(stars)}  ${st.boss ? "Boss defeated!" : "Stage cleared!"}` + (stars > prev && prev ? " New best." : "")
+    : st.boss ? "The boss survived this time. Try again!" : `No stars yet. You need ${st.stars[0]} points for the first star.`;
+  el.hidden = false;
+  if (st.boss && run.won) { $("resStory").textContent = storyW(st.w, "victory"); $("resStory").hidden = false; }
+  const nxt = nextStageOf(st);
+  $("nextStage").hidden = !(nxt && stageUnlocked(nxt));
+  $("toCampaign").hidden = false;
+  $("chSend").hidden = true;
+  prog.runs += 1; prog.secs += run.secs;
+  if (!prog.kinds.includes(run.kind)) prog.kinds.push(run.kind);
+  saveProg();
+  const newStars = Math.max(0, stars - prev);
+  const xp = Math.min(300, 15 + Math.round(run.secs / 3) + newStars * 30 + (st.boss && run.won && !prev ? 50 : 0));
+  $("resXp").textContent = `+${xp} XP` + (newStars ? ` (includes ${newStars} new star${newStars > 1 ? "s" : ""})` : "");
+  addXp(xp);
+  const got = unlocksAtStars(before, totalStars());
+  if (got.length) { toast("Star reward!", `Unlocked: ${got.join(", ")}.`); refreshUnlocks(); }
+  checkAchievements({ run, C, bestStreak, bestCombo, golds, bombsHit, bombsSpawned, decoyHits: shots.filter(x => x.decoy).length });
+  if (run.boss) $("analysis").style.display = "none"; else renderAnalysis(run);
+  lastRun = null;
+  renderCompare();
+  $("campStars").textContent = "★ " + totalStars();
+}
+
 // ---------- unlocks ----------
 const UNLOCKS = {
   crosshair: [
@@ -1549,23 +1927,31 @@ const UNLOCKS = {
     { id: "dot", name: "Dot" }, { id: "circle", name: "Circle" },
     { id: "tee", name: "T-shape", lvl: 3 }, { id: "chevron", name: "Chevron", lvl: 6 }, { id: "brackets", name: "Brackets", lvl: 9 },
     { id: "triangle", name: "Triangle", lvl: 12 }, { id: "star", name: "Starburst", lvl: 16 }, { id: "plasma", name: "Plasma ring", lvl: 22 },
-    { id: "pro", name: "Pro scope", ach: "sharp" }
+    { id: "pro", name: "Pro scope", ach: "sharp" },
+    { id: "halo", name: "Halo", stars: 15 }, { id: "crown", name: "Crown", ach: "campaign" }
   ],
   skin: [
     { id: "solid", name: "Solid dot" }, { id: "ring", name: "Ring" }, { id: "bullseye", name: "Bullseye" },
     { id: "diamond", name: "Diamond", lvl: 2 }, { id: "hex", name: "Hexagon", lvl: 5 }, { id: "glass", name: "Glass", lvl: 8 },
     { id: "pixel", name: "Pixel", lvl: 11 }, { id: "neon", name: "Neon", lvl: 15 }, { id: "planet", name: "Planet", lvl: 20 },
-    { id: "gold", name: "Solid gold", ach: "goldrush" }
+    { id: "gold", name: "Solid gold", ach: "goldrush" },
+    { id: "crystal", name: "Crystal", stars: 30 }, { id: "core", name: "Boss core", stars: 55 }
   ],
   sound: [
     { id: "beep", name: "Beep" }, { id: "pop", name: "Pop", lvl: 2 }, { id: "click", name: "Click", lvl: 4 },
     { id: "coin", name: "Coin", lvl: 7 }, { id: "laser", name: "Laser", lvl: 10 }, { id: "drum", name: "Drum", lvl: 13 },
-    { id: "chime", name: "Chime", lvl: 18 }, { id: "arcade", name: "Arcade", lvl: 25 }, { id: "fanfare", name: "Fanfare", ach: "daily7" }
+    { id: "chime", name: "Chime", lvl: 18 }, { id: "arcade", name: "Arcade", lvl: 25 }, { id: "fanfare", name: "Fanfare", ach: "daily7" },
+    { id: "victory", name: "Victory", stars: 45 }
   ]
 };
 const CAT = { crosshair: { key: "xStyle", word: "crosshair" }, skin: { key: "style", word: "target skin" }, sound: { key: "hitSound", word: "hit sound" } };
-const isUnlocked = it => it.lvl ? levelInfo(prog.xp).lvl >= it.lvl : it.ach ? !!prog.ach[it.ach] : true;
-const reqText = it => it.lvl ? `Reach level ${it.lvl}` : `Achievement: ${(ACH.find(a => a.id === it.ach) || {}).name}`;
+const isUnlocked = it => it.lvl ? levelInfo(prog.xp).lvl >= it.lvl : it.stars ? totalStars() >= it.stars : it.ach ? !!prog.ach[it.ach] : true;
+const reqText = it => it.lvl ? `Reach level ${it.lvl}` : it.stars ? `Earn ${it.stars} campaign stars` : `Achievement: ${(ACH.find(a => a.id === it.ach) || {}).name}`;
+function unlocksAtStars(from, to) {
+  const out = [];
+  for (const cat in UNLOCKS) UNLOCKS[cat].forEach(it => { if (it.stars && it.stars > from && it.stars <= to) out.push(`${it.name} ${CAT[cat].word}`); });
+  return out;
+}
 function buildUnlockSelects() {
   document.querySelectorAll("[data-unlock]").forEach(sel => {
     const cat = sel.dataset.unlock, key = CAT[cat].key;
@@ -1574,7 +1960,7 @@ function buildUnlockSelects() {
     UNLOCKS[cat].forEach(it => {
       const o = document.createElement("option");
       o.value = it.id; o.disabled = !isUnlocked(it);
-      o.textContent = it.name + (o.disabled ? ` (${it.lvl ? "level " + it.lvl : reqText(it)})` : "");
+      o.textContent = it.name + (o.disabled ? ` (${it.lvl ? "level " + it.lvl : it.stars ? it.stars + " stars" : reqText(it)})` : "");
       sel.appendChild(o);
     });
     sel.value = S[key];
@@ -1630,7 +2016,8 @@ function renderUnlocks() {
 // ---------- tabs ----------
 function showTab(id) {
   document.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === id));
-  ["play", "progress", "badges", "unlocks"].forEach(t => $("tab-" + t).hidden = t !== id);
+  ["play", "campaign", "progress", "badges", "unlocks"].forEach(t => $("tab-" + t).hidden = t !== id);
+  if (id === "campaign") renderCampaign();
   if (id === "unlocks") renderUnlocks();
   if (id === "progress") renderProgress();
   if (id === "badges") renderBadges();
@@ -1671,7 +2058,9 @@ $("chSend").addEventListener("click", async () => {
   catch { window.prompt("Copy this challenge link:", url); }
 });
 $("replay").addEventListener("click", () => {
-  if (lastPlay) start(lastPlay.daily, { setup: lastPlay.setup, seed: lastPlay.seed, challenge: lastPlay.challenge });
+  if (!lastPlay) return;
+  if (lastPlay.campaign) start(false, { campaign: lastPlay.campaign });
+  else start(lastPlay.daily, { setup: lastPlay.setup, seed: lastPlay.seed, challenge: lastPlay.challenge });
 });
 
 // ---------- run analysis ----------
@@ -1943,6 +2332,7 @@ renderPresets();
 loadSharedSetup();
 loadChallenge();
 renderLevel();
+$("campStars").textContent = "★ " + totalStars();
 renderDaily();
 setInterval(() => { if (!running) renderDaily(); }, 30000);
 </script>
