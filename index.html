@@ -10,15 +10,15 @@
   :root {
     --ui: #1A2250; --ui-2: #232D66; --line: #3A4690; --text: #F2F1FF; --muted: #A9AEDD;
     --accent: #FFC83D; --accent-ink: #2B1B00;
-    --field: #2B3A8C; --target: #FFC83D; --decoy: #7F89CF;
+    --field: #2B3A8C; --target: #FFC83D; --decoy: #7F89CF; --miss: #FF7A7A;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; }
+    :root:not([data-theme="dark"]) { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; --miss: #D9434B; }
   }
-  :root[data-theme="light"] { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; }
+  :root[data-theme="light"] { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; --miss: #D9434B; }
   *, *::before, *::after { box-sizing: inherit; }
   [hidden] { display: none !important; }
   html, body { height: 100%; margin: 0; }
@@ -96,7 +96,7 @@
   .xrow { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; align-items: start; }
   #xPreview { width: 6.5rem; height: 6.5rem; border-radius: 12px; background: var(--field); display: grid; place-items: center; border: 1px solid var(--line); }
 
-  #results, #compare { display: none; }
+  #results, #compare, #analysis { display: none; }
   .res { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; }
   .res div { display: grid; gap: 0.15rem; }
   .res span { color: var(--muted); font-size: 0.85rem; }
@@ -115,6 +115,63 @@
   tr.you td { color: var(--accent); font-weight: 500; }
   .daily-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem; align-items: start; }
   #dDesc { margin: 0.2rem 0 0.8rem; font-size: 1.05rem; max-width: 60ch; }
+  .tabpane { display: grid; gap: 1.25rem; }
+  /* target skins */
+  .target.diamond { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .target.hex { border-radius: 0; clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); }
+  .target.glass { background: radial-gradient(circle at 32% 30%, rgb(255 255 255 / 0.9) 0 10%, transparent 12%), color-mix(in srgb, var(--tc) 45%, transparent); border: 2px solid var(--tc); }
+  .target.pixel { border-radius: 0; clip-path: polygon(25% 0, 75% 0, 75% 12.5%, 87.5% 12.5%, 87.5% 25%, 100% 25%, 100% 75%, 87.5% 75%, 87.5% 87.5%, 75% 87.5%, 75% 100%, 25% 100%, 25% 87.5%, 12.5% 87.5%, 12.5% 75%, 0 75%, 0 25%, 12.5% 25%, 12.5% 12.5%, 25% 12.5%); }
+  .target.neon { background: transparent; border: 3px solid var(--tc); box-shadow: 0 0 10px var(--tc), inset 0 0 10px var(--tc); animation: neon 1.2s ease-in-out infinite alternate; }
+  @keyframes neon { to { box-shadow: 0 0 20px var(--tc), inset 0 0 14px var(--tc); } }
+  .target.planet { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--tc) 35%, white), var(--tc) 45%, color-mix(in srgb, var(--tc) 55%, black)); }
+  .target.planet::after { content: ""; position: absolute; left: -35%; top: 38%; width: 170%; height: 24%; border: 3px solid color-mix(in srgb, var(--tc) 55%, white); border-radius: 50%; transform: rotate(-18deg); box-sizing: border-box; }
+  .target.gold { background: linear-gradient(135deg, #FFF3B0, #FFC21A 40%, #B87D00 60%, #FFE27A); background-size: 200% 200%; animation: goldshine 2s linear infinite; }
+  .target.gold.decoy { background: var(--decoy); animation: none; }
+  @keyframes goldshine { to { background-position: 200% 200%; } }
+  /* arcade extras */
+  .target.golden { --tc: #FFC21A; background: radial-gradient(circle at 35% 35%, #FFF7CC, #FFC21A 55%, #B87D00); box-shadow: 0 0 0 3px #FFE27A, 0 0 18px 4px rgb(255 194 26 / 0.6); animation: shimmer 0.5s ease-in-out infinite alternate; }
+  @keyframes shimmer { to { box-shadow: 0 0 0 5px #FFE27A, 0 0 28px 8px rgb(255 194 26 / 0.85); } }
+  .target.bomb { --tc: #FF4D5E; background: radial-gradient(circle, #FF4D5E 0 16%, #2B1320 18% 100%); border: 3px solid #FF4D5E; animation: none; }
+  .floaty { position: absolute; transform: translate(-50%, -50%); pointer-events: none; font-weight: 700; font-size: 1.1rem; color: var(--accent); text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); animation: floaty 0.8s ease-out forwards; z-index: 4; white-space: nowrap; }
+  .floaty.gold { color: #FFE27A; font-size: 1.35rem; }
+  .floaty.bad { color: var(--miss); }
+  .floaty.big { font-size: 1.6rem; }
+  @keyframes floaty { to { transform: translate(-50%, -150%); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .target { animation: none !important; } .floaty { animation: fade 0.8s forwards; } @keyframes fade { to { opacity: 0; } } }
+  /* unlocks */
+  .items { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 0.75rem; }
+  .item { border: 1px solid var(--line); border-radius: 12px; padding: 0.7rem; display: grid; gap: 0.35rem; background: var(--ui); justify-items: start; }
+  .item.locked { opacity: 0.55; }
+  .item.equipped { border-color: var(--accent); }
+  .item strong { font-weight: 500; }
+  .item span { color: var(--muted); font-size: 0.82rem; }
+  .item button { padding: 0.3rem 0.8rem; font-size: 0.9rem; }
+  .prev { width: 100%; height: 4.5rem; border-radius: 8px; background: var(--field); position: relative; display: grid; place-items: center; overflow: hidden; }
+  .prev .target { left: 50%; top: 50%; width: 38px; height: 38px; }
+  #lvlNext { font-size: 0.82rem; color: var(--muted); }
+  .tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .lvl { display: grid; gap: 0.35rem; min-width: 14rem; flex: 1; max-width: 20rem; }
+  .lvl-top { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
+  .lvl-top strong { font-weight: 500; }
+  .lvl-top span { color: var(--muted); }
+  .bar { height: 0.6rem; border-radius: 999px; background: var(--ui); border: 1px solid var(--line); overflow: hidden; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; transition: width 0.6s ease; }
+  .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.75rem; }
+  .badge { border: 1px solid var(--line); border-radius: 12px; padding: 0.75rem 0.85rem; display: grid; gap: 0.2rem; background: var(--ui); align-content: start; }
+  .badge.locked { opacity: 0.55; }
+  .badge strong { font-weight: 500; }
+  .badge span { color: var(--muted); font-size: 0.85rem; }
+  .badge .got { color: var(--accent); }
+  #toasts { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); display: grid; gap: 0.5rem; z-index: 50; pointer-events: none; }
+  .toast { background: var(--ui-2); border: 1px solid var(--accent); color: var(--text); border-radius: 12px; padding: 0.7rem 1rem; box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); animation: toast-in 0.3s ease-out; max-width: 20rem; }
+  .toast strong { color: var(--accent); font-weight: 500; display: block; }
+  @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .toast { animation: none; } .bar > div { transition: none; } }
+  .pb { color: var(--accent); font-weight: 500; margin: 0.9rem 0 0; }
+  #challengeCard { border-color: var(--accent); }
+  #chText { font-size: 1.25rem; margin: 0 0 0.3rem; }
+  .analysis-text { margin: 0 0 1rem; padding-left: 1.1rem; display: grid; gap: 0.35rem; }
 </style>
 </head>
 <body>
@@ -135,14 +192,51 @@
             <h1>Aim trainer</h1>
             <p class="hint">Press Start or Space to play. Esc ends a run early.</p>
           </div>
+          <div class="lvl">
+            <div class="lvl-top"><strong id="lvlName">Level 1, Rookie</strong><span id="lvlXp">0 / 100 XP</span></div>
+            <div class="bar"><div id="lvlBar"></div></div>
+            <span id="lvlNext"></span>
+          </div>
           <button class="primary big" data-start>Start</button>
         </div>
 
         <div id="notice" role="status" hidden></div>
 
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="play" aria-selected="true">Play</button>
+          <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
+          <button role="tab" data-tab="badges" aria-selected="false">Achievements <span id="badgeCount"></span></button>
+          <button role="tab" data-tab="unlocks" aria-selected="false">Unlocks</button>
+        </div>
+
+        <div class="tabpane" id="tab-play">
+        <section class="card" id="challengeCard" hidden>
+          <h2>You've been challenged</h2>
+          <p id="chText"></p>
+          <p class="hint" id="chSetup"></p>
+          <div class="row sub"><button class="primary" id="chAccept">Accept challenge</button><button id="chDismiss">Not now</button></div>
+        </section>
+
         <section class="card" id="results" aria-live="polite">
           <h2 id="resTitle">Last run</h2>
           <div class="res" id="resGrid"></div>
+          <p class="pb" id="resPb" hidden></p>
+          <p class="pb" id="resChallenge" hidden></p>
+          <p class="hint" id="resXp"></p>
+          <div class="row sub">
+            <button class="primary" id="chSend">Challenge a friend</button>
+            <button id="replay">Replay the same targets</button>
+          </div>
+        </section>
+
+        <section class="card" id="analysis" aria-live="polite">
+          <h2>Run analysis</h2>
+          <ul class="analysis-text" id="anText"></ul>
+          <div class="charts">
+            <div class="chart"><h3 id="an1Title"></h3><div id="an1"></div></div>
+            <div class="chart"><h3 id="an2Title"></h3><div id="an2"></div></div>
+            <div class="chart" id="an3Wrap"><h3 id="an3Title"></h3><div id="an3"></div></div>
+          </div>
         </section>
 
         <section class="card" id="compare" aria-live="polite">
@@ -237,6 +331,17 @@
               <input type="number" data-key="area" min="10" max="100" step="5"></label>
             <label class="check" data-for="track"><input type="checkbox" data-key="holdToTrack"> Only counts while holding the mouse button</label>
           </div>
+          <div data-for="click switch">
+            <h3 class="sub">Arcade extras</h3>
+            <label class="check"><input type="checkbox" data-key="extras"> Turn on combos, golden targets and bombs</label>
+            <p class="hint">Hit streaks build a multiplier up to 4x. Golden targets are worth 3x but vanish fast. Bombs cost 250 points and break your combo.</p>
+            <div class="grid sub" data-extras>
+              <label>Golden target chance (%)
+                <input type="number" data-key="goldChance" min="0" max="50"></label>
+              <label data-for="click">Bomb chance (%)
+                <input type="number" data-key="bombChance" min="0" max="50"></label>
+            </div>
+          </div>
           <h3 class="sub">Session</h3>
           <div class="grid">
             <label data-for="click switch">Run ends
@@ -260,13 +365,7 @@
             <div id="xPreview" aria-label="Crosshair preview"></div>
             <div class="grid">
               <label>Crosshair
-                <select data-key="xStyle">
-                  <option value="system">System cursor</option>
-                  <option value="cross">Cross</option>
-                  <option value="crossdot">Cross with dot</option>
-                  <option value="dot">Dot</option>
-                  <option value="circle">Circle</option>
-                </select></label>
+                <select data-key="xStyle" data-unlock="crosshair"></select></label>
               <label>Color <input type="color" data-key="xColor"></label>
               <label>Line length (px)
                 <input type="number" data-key="xSize" min="1" max="40"></label>
@@ -289,11 +388,9 @@
           <h2>Look and feel</h2>
           <div class="grid">
             <label>Target style
-              <select data-key="style">
-                <option value="solid">Solid dot</option>
-                <option value="ring">Ring</option>
-                <option value="bullseye">Bullseye</option>
-              </select></label>
+              <select data-key="style" data-unlock="skin"></select></label>
+            <label>Hit sound
+              <select data-key="hitSound" data-unlock="sound"></select></label>
             <label>Target color <input type="color" data-key="targetColor"></label>
             <label>Decoy color (switching) <input type="color" data-key="decoyColor"></label>
             <label>Background color <input type="color" data-key="bgColor"></label>
@@ -303,9 +400,58 @@
         </section>
 
         <div class="row"><button class="primary big" data-start>Start</button></div>
+        </div>
+
+        <div class="tabpane" id="tab-progress" hidden>
+          <section class="card">
+            <h2>Overall</h2>
+            <div class="res" id="progTotals"></div>
+          </section>
+          <section class="card">
+            <h2>Progress by game type</h2>
+            <div class="seg" role="group" aria-label="Game type">
+              <button data-pk="click" aria-pressed="true">Clicking</button>
+              <button data-pk="switch" aria-pressed="false">Switching</button>
+              <button data-pk="track" aria-pressed="false">Tracking</button>
+            </div>
+            <div class="charts sub">
+              <div class="chart"><h3 id="prog1Title"></h3><div id="prog1"></div></div>
+              <div class="chart"><h3>Runs per day, last 30 days</h3><div id="prog2"></div></div>
+            </div>
+            <div class="board">
+              <h3>Personal bests</h3>
+              <table><thead id="pbHead"></thead><tbody id="pbBody"></tbody></table>
+            </div>
+          </section>
+        </div>
+
+        <div class="tabpane" id="tab-unlocks" hidden>
+          <section class="card">
+            <h2>Crosshairs</h2>
+            <p class="hint">Level up and earn achievements to unlock more. Colors and sizes still come from your crosshair settings.</p>
+            <div class="items sub" id="unlockCrosshair"></div>
+          </section>
+          <section class="card">
+            <h2>Target skins</h2>
+            <div class="items" id="unlockSkin"></div>
+          </section>
+          <section class="card">
+            <h2>Hit sounds</h2>
+            <div class="items" id="unlockSound"></div>
+          </section>
+        </div>
+
+        <div class="tabpane" id="tab-badges" hidden>
+          <section class="card">
+            <h2>Achievements</h2>
+            <p class="hint" id="badgeSummary"></p>
+            <div class="badges sub" id="badgeGrid"></div>
+          </section>
+        </div>
       </div>
     </div>
   </main>
+  <div id="toasts" aria-live="polite"></div>
 
 <script>
 // ===== Online scoreboard settings =====
@@ -323,11 +469,13 @@ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const SETUP_DEFAULTS = {
   kind: "click", count: 1, size: 50, sizeVar: 0, lifetime: 0, sizeMode: "fixed", speed: 0, turnEvery: 600,
   holdToTrack: false, respawn: 0, respawnMax: 0, spacing: 10, area: 100,
-  mode: "time", duration: 30, goal: 50, countMisses: true, missEnds: false
+  mode: "time", duration: 30, goal: 50, countMisses: true, missEnds: false,
+  extras: false, goldChance: 10, bombChance: 10
 };
 const LOOK_DEFAULTS = {
   style: "solid", targetColor: "#FFC83D", decoyColor: "#7F89CF", bgColor: "#2B3A8C", sound: true, hitEffect: true,
-  xStyle: "crossdot", xColor: "#FFFFFF", xSize: 8, xThick: 2, xGap: 4, xOutline: true, lock: false, sens: 1
+  xStyle: "crossdot", xColor: "#FFFFFF", xSize: 8, xThick: 2, xGap: 4, xOutline: true, lock: false, sens: 1,
+  hitSound: "beep"
 };
 const ALL_DEFAULTS = { ...SETUP_DEFAULTS, ...LOOK_DEFAULTS };
 const SETUP_KEYS = Object.keys(SETUP_DEFAULTS);
@@ -384,6 +532,7 @@ function applyLook() {
   r.setProperty("--decoy", S.decoyColor);
   document.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.kind === S.kind));
   document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(S.kind));
+  document.querySelectorAll("[data-extras]").forEach(l => l.hidden = !S.extras);
   $("kindHint").textContent = KIND_HINTS[S.kind];
   $("countLbl").textContent = S.kind === "switch" ? "Targets on screen (one is lit)" : "Targets on screen at once";
   $("lifeLbl").textContent = S.kind === "switch" ? "Time to hit the lit target (ms)" : "Target lifetime (ms)";
@@ -391,7 +540,12 @@ function applyLook() {
   buildXhair();
 }
 inputs.forEach(el => el.addEventListener("change", readForm));
-document.querySelectorAll("[data-kind]").forEach(b => b.addEventListener("click", () => { S.kind = b.dataset.kind; fillForm(); }));
+document.querySelector('[data-key="hitSound"]').addEventListener("change", e => previewSound(e.target.value));
+document.querySelectorAll("[data-kind]").forEach(b => b.addEventListener("click", () => {
+  S.kind = b.dataset.kind;
+  if (S.kind === "track" && S.speed === 0) S.speed = 300;
+  fillForm();
+}));
 function applySetup(setup) {
   for (const k of SETUP_KEYS) S[k] = setup[k] ?? SETUP_DEFAULTS[k];
   fillForm();
@@ -441,20 +595,39 @@ $("savePreset").addEventListener("click", () => {
   savePresets(); renderPresets();
   $("presetName").value = "";
   notice(`Saved "${name}".`);
+  unlock("preset");
 });
 function encodeSetup(o) {
   return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-function decodeSetup(str) {
+function encodeObj(o) { return encodeSetup(o); }
+function decodeObj(str) {
   try {
     let b = str.replace(/-/g, "+").replace(/_/g, "/");
     while (b.length % 4) b += "=";
     const o = JSON.parse(decodeURIComponent(escape(atob(b))));
-    const out = {};
-    SETUP_KEYS.forEach(k => { if (k in o && typeof o[k] === typeof SETUP_DEFAULTS[k]) out[k] = o[k]; });
-    return out;
+    return o && typeof o === "object" ? o : null;
   } catch { return null; }
 }
+function cleanSetup(o) {
+  const out = {};
+  SETUP_KEYS.forEach(k => {
+    if (!(k in o) || typeof o[k] !== typeof SETUP_DEFAULTS[k]) return;
+    let v = o[k];
+    const el = document.querySelector(`[data-key="${k}"]`);
+    if (typeof v === "number") {
+      if (!Number.isFinite(v)) return;
+      if (el && el.type === "number") v = clamp(v, Number(el.min), Number(el.max));
+    }
+    if (typeof v === "string") {
+      if (k === "kind" && !["click", "switch", "track"].includes(v)) return;
+      if (el && el.tagName === "SELECT" && ![...el.options].some(op => op.value === v)) return;
+    }
+    out[k] = v;
+  });
+  return out;
+}
+function decodeSetup(str) { const o = decodeObj(str); return o ? cleanSetup(o) : null; }
 $("shareLink").addEventListener("click", async () => {
   readForm();
   const link = location.origin + location.pathname + "#setup=" + encodeSetup(currentSetup());
@@ -485,21 +658,22 @@ const KIND_KEYS = {
 };
 function setupKey(c) {
   const session = c.kind === "track" || c.mode === "time" ? "t" + c.duration : c.mode === "hits" ? "h" + c.goal : "e";
-  return c.kind + ":" + KIND_KEYS[c.kind].map(k => c[k]).join(",") + ":" + session;
+  const extras = c.extras && c.kind !== "track" ? `:x${c.goldChance},${c.kind === "click" ? c.bombChance : 0}` : "";
+  return c.kind + ":" + KIND_KEYS[c.kind].map(k => c[k]).join(",") + ":" + session + extras;
 }
 function sizeWord(s) { return s < 30 ? "small" : s < 60 ? "medium" : "large"; }
 function bucketOf(c) {
   if (c.kind === "track") return `track|${sizeWord(c.size)}|${c.speed < 200 ? "slow" : c.speed < 450 ? "medium" : "fast"}`;
   const n = c.count <= 1 ? "1" : c.count <= 3 ? "2-3" : "4+";
   const timed = c.lifetime > 0 ? (c.lifetime <= 800 ? "short" : "long") : "none";
-  return `${c.kind}|${n}|${sizeWord(c.size)}|${c.speed > 0 ? "moving" : "still"}|${timed}`;
+  return `${c.kind}|${n}|${sizeWord(c.size)}|${c.speed > 0 ? "moving" : "still"}|${timed}` + (c.extras ? "|extras" : "");
 }
 function bucketLabel(b) {
   const p = b.split("|");
   if (p[0] === "track") return `tracking a ${p[1]} target at ${p[2]} speed`;
   const n = p[1] === "1" ? "1 target" : p[1] + " targets";
   const timed = p[4] === "none" ? "no time limit" : p[4] === "short" ? "a short time limit" : "a time limit";
-  return `${KIND_NAMES[p[0]]}, ${n}, ${p[2]} size, ${p[3]}, ${timed}`;
+  return `${KIND_NAMES[p[0]]}, ${n}, ${p[2]} size, ${p[3]}, ${timed}` + (p[5] === "extras" ? ", arcade extras on" : "");
 }
 function setupName(key) {
   if (key === setupKey(normalize(dailySetup()))) return "today's challenge";
@@ -545,8 +719,9 @@ function describeSetup(c) {
     if (c.lifetime) parts.push(c.kind === "switch" ? `${c.lifetime} ms to hit each lit target` : `targets vanish after ${c.lifetime} ms`);
     if (c.sizeMode !== "fixed") parts.push(c.sizeMode === "shrink" ? "shrinking" : "growing");
     if (c.speed) parts.push(`moving at ${c.speed} px/s`);
+    if (c.extras) parts.push("arcade extras on");
   }
-  parts.push(`${c.duration} seconds`);
+  parts.push(c.kind === "track" || c.mode === "time" ? `${c.duration} seconds` : c.mode === "hits" ? `first to ${c.goal} hits` : "no time limit");
   return parts.join(", ") + ".";
 }
 function msToNextDay() { const n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1) - n.getTime(); }
@@ -567,21 +742,54 @@ function renderDaily() {
 }
 
 // ---------- crosshair ----------
-function crosshairSVG(o) {
-  const st = o.xStyle === "system" ? "crossdot" : o.xStyle;
-  const L = o.xSize, T = o.xThick, G = o.xGap;
-  const D = Math.ceil((st === "dot" ? T : G + L) * 2 + T + 8), c = D / 2;
-  const shapes = [];
-  if (st === "cross" || st === "crossdot") shapes.push(
-    `<rect x="${c - T / 2}" y="${c - G - L}" width="${T}" height="${L}"/>`,
-    `<rect x="${c - T / 2}" y="${c + G}" width="${T}" height="${L}"/>`,
-    `<rect x="${c - G - L}" y="${c - T / 2}" width="${L}" height="${T}"/>`,
-    `<rect x="${c + G}" y="${c - T / 2}" width="${L}" height="${T}"/>`);
-  if (st !== "cross") { const d = Math.max(2, T); shapes.push(`<rect x="${c - d / 2}" y="${c - d / 2}" width="${d}" height="${d}" rx="${d / 2}"/>`); }
-  const ring = st === "circle" ? `<circle cx="${c}" cy="${c}" r="${G + L / 2}" fill="none" stroke="${o.xColor}" stroke-width="${T}"/>` : "";
-  const outline = o.xOutline
-    ? `<g fill="none" stroke="#000" stroke-width="2" opacity="0.8">${shapes.join("")}${st === "circle" ? `<circle cx="${c}" cy="${c}" r="${G + L / 2}" stroke-width="${T + 2}"/>` : ""}</g>` : "";
-  return { svg: `<svg width="${D}" height="${D}" viewBox="0 0 ${D} ${D}" aria-hidden="true">${outline}${ring}<g fill="${o.xColor}">${shapes.join("")}</g></svg>`, size: D };
+function crosshairSVG(o, styleOverride) {
+  const st0 = styleOverride || o.xStyle, st = st0 === "system" ? "crossdot" : st0;
+  const L = o.xSize, T = o.xThick, G = o.xGap, col = o.xColor;
+  const reach = st === "dot" ? T : st === "pro" ? G + L + 4 : G + L;
+  const D = Math.ceil(reach * 2 + T * 2 + 10), c = D / 2;
+  const rects = [], paths = [], circles = [];
+  let spin = "";
+  const cross = (top = true) => {
+    if (top) rects.push(`<rect x="${c - T / 2}" y="${c - G - L}" width="${T}" height="${L}"/>`);
+    rects.push(`<rect x="${c - T / 2}" y="${c + G}" width="${T}" height="${L}"/>`,
+      `<rect x="${c - G - L}" y="${c - T / 2}" width="${L}" height="${T}"/>`,
+      `<rect x="${c + G}" y="${c - T / 2}" width="${L}" height="${T}"/>`);
+  };
+  const dot = () => { const d = Math.max(2, T); rects.push(`<rect x="${c - d / 2}" y="${c - d / 2}" width="${d}" height="${d}" rx="${d / 2}"/>`); };
+  const r = G + L / 2;
+  switch (st) {
+    case "cross": cross(); break;
+    case "dot": dot(); break;
+    case "circle": circles.push(r); dot(); break;
+    case "tee": cross(false); dot(); break;
+    case "chevron": paths.push(`M${c - L} ${c + G + L * 0.8}L${c} ${c + G}L${c + L} ${c + G + L * 0.8}`); dot(); break;
+    case "brackets": {
+      const h = Math.max(L * 0.8, 4), lip = Math.max(L * 0.4, 3);
+      paths.push(`M${c - r + lip} ${c - h}H${c - r}V${c + h}H${c - r + lip}`, `M${c + r - lip} ${c - h}H${c + r}V${c + h}H${c + r - lip}`);
+      dot(); break;
+    }
+    case "triangle": {
+      const pts = [0, 1, 2].map(i => { const a = -Math.PI / 2 + i * 2 * Math.PI / 3; return `${c + r * Math.cos(a)} ${c + r * Math.sin(a)}`; });
+      paths.push(`M${pts[0]}L${pts[1]}L${pts[2]}Z`); dot(); break;
+    }
+    case "star": {
+      cross();
+      const i0 = G * 0.9, i1 = G + L * 0.65;
+      [45, 135, 225, 315].forEach(deg => { const a = deg * Math.PI / 180; paths.push(`M${c + Math.cos(a) * i0} ${c + Math.sin(a) * i0}L${c + Math.cos(a) * i1} ${c + Math.sin(a) * i1}`); });
+      dot(); break;
+    }
+    case "plasma": {
+      const circ = 2 * Math.PI * r;
+      spin = `<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${col}" stroke-width="${T}" stroke-dasharray="${circ / 8} ${circ / 8}"><animateTransform attributeName="transform" type="rotate" from="0 ${c} ${c}" to="360 ${c} ${c}" dur="2.4s" repeatCount="indefinite"/></circle>`;
+      dot(); break;
+    }
+    case "pro": cross(); circles.push(G + L + 3); dot(); break;
+    default: cross(); dot();
+  }
+  const pathEls = (w, stroke) => paths.map(d => `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${w}" stroke-linejoin="miter"/>`).join("")
+    + circles.map(rr => `<circle cx="${c}" cy="${c}" r="${rr}" fill="none" stroke="${stroke}" stroke-width="${w}"/>`).join("");
+  const outline = o.xOutline ? `<g opacity="0.8"><g fill="none" stroke="#000" stroke-width="2">${rects.join("")}</g>${pathEls(T + 2, "#000")}</g>` : "";
+  return { svg: `<svg width="${D}" height="${D}" viewBox="0 0 ${D} ${D}" aria-hidden="true">${outline}${spin}${pathEls(T, col)}<g fill="${col}">${rects.join("")}</g></svg>`, size: D };
 }
 let xSize = 0;
 function buildXhair() {
@@ -597,11 +805,29 @@ let running = false, startTime = 0, last = 0, hits = 0, misses = 0, expired = 0;
 let reactions = [], targets = [], timeouts = [];
 let onTime = 0, trackTime = 0, streak = 0, bestStreak = 0, held = false;
 let cx = null, cy = null, locked = false;
+let runSeed = 0, activeChallenge = null, lastPlay = null;
+let shots = [], regionLog = [], trackSamples = [], nextSample = 0, fieldAspect = 0.6;
+let points = 0, combo = 0, bestCombo = 0, golds = 0, bombsHit = 0, bombsSpawned = 0;
+const comboMult = n => n >= 35 ? 4 : n >= 20 ? 3 : n >= 10 ? 2 : n >= 5 ? 1.5 : 1;
+function floatText(x, y, text, cls = "") {
+  const f = document.createElement("div");
+  f.className = "floaty " + cls; f.textContent = text;
+  f.style.left = x + "px"; f.style.top = y + "px";
+  field.appendChild(f);
+  setTimeout(() => f.remove(), 850);
+}
+function breakCombo() { combo = 0; }
 
 function spawn(lit = true) {
   if (!running) return null;
   const W = field.clientWidth, H = field.clientHeight;
-  const size = C.kind === "track" ? C.size : Math.max(6, C.size + (rand() * 2 - 1) * C.sizeVar), r = size / 2;
+  let type = "normal";
+  if (C.extras && C.kind === "click") {
+    const roll = rand() * 100;
+    if (roll < C.bombChance) type = "bomb"; else if (roll < C.bombChance + C.goldChance) type = "golden";
+  }
+  if (type === "bomb") bombsSpawned++;
+  const size = (C.kind === "track" ? C.size : Math.max(6, C.size + (rand() * 2 - 1) * C.sizeVar)) * (type === "golden" ? 0.75 : 1), r = size / 2;
   const areaPct = C.kind === "track" ? 60 : C.area;
   const aw = W * areaPct / 100, ah = H * areaPct / 100;
   const x0 = Math.max(r, (W - aw) / 2 + r), x1 = Math.min(W - r, (W + aw) / 2 - r);
@@ -613,10 +839,11 @@ function spawn(lit = true) {
     if (targets.every(t => Math.hypot(t.x - x, t.y - y) >= r + t.size / 2 + C.spacing)) break;
   }
   const el = document.createElement("div");
-  el.className = "target" + (S.style !== "solid" ? " " + S.style : "") + (lit ? "" : " decoy");
+  el.className = "target" + (S.style !== "solid" ? " " + S.style : "") + (lit ? "" : " decoy") + (type !== "normal" ? " " + type : "");
   el.style.width = el.style.height = size + "px";
   const angle = rand() * Math.PI * 2, now = performance.now();
-  const t = { el, x, y, size, scale: 1, lit, litAt: now, vx: Math.cos(angle) * C.speed, vy: Math.sin(angle) * C.speed, nextTurn: now + C.turnEvery };
+  const t = { el, x, y, size, scale: 1, lit, litAt: now, sx: cx ?? W / 2, sy: cy ?? H / 2, type,
+    vx: Math.cos(angle) * C.speed, vy: Math.sin(angle) * C.speed, nextTurn: now + C.turnEvery };
   place(t);
   field.appendChild(el);
   targets.push(t);
@@ -629,8 +856,12 @@ function queueSpawn() {
   const delay = C.respawn + (C.respawnMax > 0 ? rand() * C.respawnMax : 0);
   if (delay > 0) timeouts.push(setTimeout(() => spawn(), delay)); else spawn();
 }
-function light(t) { t.lit = true; t.litAt = performance.now(); t.el.classList.remove("decoy"); t.el.classList.add("lit"); }
-function unlight(t) { t.lit = false; t.el.classList.remove("lit"); t.el.classList.add("decoy"); setScale(t, 1); }
+function light(t) {
+  t.lit = true; t.litAt = performance.now(); t.sx = cx; t.sy = cy;
+  t.el.classList.remove("decoy"); t.el.classList.add("lit");
+  if (C.extras && rand() * 100 < C.goldChance) { t.type = "golden"; t.el.classList.add("golden"); }
+}
+function unlight(t) { t.lit = false; t.type = "normal"; t.el.classList.remove("lit", "golden"); t.el.classList.add("decoy"); setScale(t, 1); }
 function lightRandom(exclude) {
   let pool = targets.filter(x => !x.lit && x !== exclude);
   if (!pool.length) pool = targets.filter(x => !x.lit);
@@ -656,18 +887,54 @@ document.addEventListener("pointerup", () => held = false);
 
 function shoot() {
   const now = performance.now();
-  let best = null, bestD = Infinity, hitDecoy = false;
+  let best = null, bestD = Infinity, hitDecoy = false, bomb = null;
   for (const t of targets) {
     const d = Math.hypot(t.x - cx, t.y - cy);
     if (d > t.size * t.scale / 2 + 1) continue;
-    if (t.lit) { if (d < bestD) { best = t; bestD = d; } } else hitDecoy = true;
+    if (t.type === "bomb") bomb = t;
+    else if (t.lit) { if (d < bestD) { best = t; bestD = d; } } else hitDecoy = true;
   }
+  if (!best && bomb) { shots.push({ x: cx / field.clientWidth, y: cy / field.clientHeight, hit: false, bomb: true }); return hitBomb(bomb); }
+  let near = null, nd = Infinity;
+  for (const t of targets) if (t.lit && t.type !== "bomb") { const d = Math.hypot(t.x - cx, t.y - cy); if (d < nd) { nd = d; near = t; } }
+  const shot = { x: cx / field.clientWidth, y: cy / field.clientHeight, hit: !!best, decoy: !best && hitDecoy };
+  if (near) {
+    const r = near.size * near.scale / 2;
+    shot.dx = (cx - near.x) / r; shot.dy = (cy - near.y) / r; shot.dist = nd / r;
+    const ax = near.x - near.sx, ay = near.y - near.sy, al = Math.hypot(ax, ay);
+    if (al > 5) shot.along = ((cx - near.x) * ax + (cy - near.y) * ay) / al / r;
+  }
+  shots.push(shot);
   if (best) return hit(best, now);
-  if (hitDecoy || C.countMisses) { misses++; updateHud(); if (C.missEnds) end(); }
+  if (hitDecoy || C.countMisses) {
+    misses++;
+    if (C.extras) { points -= 50; breakCombo(); floatText(cx, cy, "-50", "bad"); }
+    updateHud();
+    if (C.missEnds) end();
+  }
+}
+function hitBomb(t) {
+  misses++; bombsHit++; points -= 250; breakCombo();
+  floatText(t.x, t.y, "-250", "bad big");
+  playSound("bomb");
+  removeTarget(t);
+  updateHud();
+  if (C.missEnds) return end();
+  queueSpawn();
 }
 function hit(t, now) {
   reactions.push(now - t.litAt);
+  regionLog.push({ x: t.x / field.clientWidth, y: t.y / field.clientHeight, ms: now - t.litAt });
   hits++;
+  if (C.extras) {
+    const before = comboMult(combo);
+    combo++; bestCombo = Math.max(bestCombo, combo);
+    const mult = comboMult(combo), gained = Math.round((t.type === "golden" ? 300 : 100) * mult);
+    points += gained;
+    if (t.type === "golden") golds++;
+    floatText(t.x, t.y, "+" + gained, t.type === "golden" ? "gold" : "");
+    if (mult > before) floatText(t.x, t.y - 34, mult + "x combo!", "big");
+  }
   if (S.hitEffect) {
     const p = document.createElement("div");
     p.className = "pop";
@@ -676,7 +943,7 @@ function hit(t, now) {
     field.appendChild(p);
     setTimeout(() => p.remove(), 300);
   }
-  if (S.sound) beep();
+  playSound(t.type === "golden" ? "gold" : "hit");
   removeTarget(t);
   updateHud();
   if (C.mode === "hits" && hits >= C.goal) return end();
@@ -694,8 +961,13 @@ function loop(now) {
 
   const W = field.clientWidth, H = field.clientHeight;
   for (const t of [...targets]) {
+    if (t.type === "bomb" && now - t.litAt >= 1800) { removeTarget(t); queueSpawn(); continue; }
+    if (t.type === "golden" && now - t.litAt >= Math.min(C.lifetime || Infinity, 1300)) {
+      if (C.kind === "switch") { unlight(t); lightRandom(t); } else { removeTarget(t); queueSpawn(); continue; }
+    }
     if (C.kind !== "track" && C.lifetime > 0 && t.lit && now - t.litAt >= C.lifetime) {
       expired++;
+      if (C.extras) breakCombo();
       if (C.kind === "switch") { unlight(t); lightRandom(t); }
       else { removeTarget(t); queueSpawn(); continue; }
     }
@@ -722,6 +994,11 @@ function loop(now) {
     trackTime += dt;
     if (on) { onTime += dt; streak += dt; bestStreak = Math.max(bestStreak, streak); } else streak = 0;
     if (t) t.el.classList.toggle("on", on);
+    if (t && cx !== null && now >= nextSample) {
+      nextSample = now + 100;
+      const r = t.size / 2, ox = (cx - t.x) / r, oy = (cy - t.y) / r, v = Math.hypot(t.vx, t.vy) || 1;
+      trackSamples.push({ sec: elapsed, on, along: (ox * t.vx + oy * t.vy) / v, side: (ox * t.vy - oy * t.vx) / v });
+    }
     updateHud();
   }
   requestAnimationFrame(loop);
@@ -737,6 +1014,10 @@ function updateHud() {
     setSlot(1, "On target", (trackTime ? onTime / trackTime * 100 : 0).toFixed(1) + "%");
     setSlot(2, "Streak", streak.toFixed(1) + "s");
     setSlot(3, null);
+  } else if (C && C.extras) {
+    setSlot(1, "Score", Math.max(0, points));
+    setSlot(2, "Combo", `${combo} (${comboMult(combo)}x)`);
+    setSlot(3, "Accuracy", hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–");
   } else {
     setSlot(1, "Hits", hits);
     setSlot(2, "Misses", misses);
@@ -745,13 +1026,17 @@ function updateHud() {
 }
 
 // ---------- start / end ----------
-function start(daily = false) {
+function start(daily = false, opts = {}) {
   if (running) return;
   readForm();
   isDaily = daily;
-  C = normalize(daily ? { ...S, ...dailySetup() } : { ...S });
-  rand = daily ? mulberry32(hashStr(todayKey() + "-spawns")) : Math.random;
+  C = normalize(daily ? { ...S, ...dailySetup() } : opts.setup ? { ...S, ...opts.setup } : { ...S });
+  runSeed = daily ? hashStr(todayKey() + "-spawns") : (opts.seed ?? Math.floor(Math.random() * 4294967296)) >>> 0;
+  rand = mulberry32(runSeed);
+  activeChallenge = daily ? null : (opts.challenge || null);
   hits = misses = expired = 0; reactions = []; onTime = trackTime = streak = bestStreak = 0;
+  shots = []; regionLog = []; trackSamples = []; nextSample = 0;
+  points = combo = bestCombo = golds = bombsHit = bombsSpawned = 0;
   targets.forEach(t => t.el.remove()); targets = [];
   $("tLbl").textContent = C.mode === "time" ? "Time left" : "Time";
   overlay.style.display = "none";
@@ -786,66 +1071,132 @@ function end() {
   targets.forEach(t => t.el.remove()); targets = [];
   $("xhair").style.display = "none";
   field.style.cursor = "";
+  fieldAspect = field.clientHeight / Math.max(1, field.clientWidth);
 
   let run, shown, valid;
   if (C.kind === "track") {
     const pct = trackTime > 0 ? +(onTime / trackTime * 100).toFixed(2) : 0;
-    run = { kind: "track", pct, score: Math.round(pct * 100), acc: Math.round(pct), secs: +secs.toFixed(2) };
+    run = { kind: "track", pct, score: Math.round(pct * 100), acc: Math.round(pct), secs: +secs.toFixed(2), streak: +bestStreak.toFixed(1) };
     shown = [["Score", run.score], ["On target", pct.toFixed(1) + "%"], ["Longest streak", bestStreak.toFixed(1) + " s"], ["Time", secs.toFixed(1) + " s"]];
     valid = secs >= 5;
   } else {
     const avg = reactions.length ? reactions.reduce((a, b) => a + b, 0) / reactions.length : 0;
     const acc = hits + misses ? Math.round(hits / (hits + misses) * 100) : 100;
     run = { kind: C.kind, hits, misses, avg: Math.round(avg), best: reactions.length ? Math.round(Math.min(...reactions)) : 0,
-      acc, hps: secs > 0 ? +(hits / secs).toFixed(2) : 0, score: Math.max(0, hits * 100 - misses * 50), secs: +secs.toFixed(2) };
-    shown = [["Score", run.score], ["Hits", hits], ["Misses", misses], ["Expired", expired],
+      acc, hps: secs > 0 ? +(hits / secs).toFixed(2) : 0, score: C.extras ? Math.max(0, points) : Math.max(0, hits * 100 - misses * 50), secs: +secs.toFixed(2) };
+    if (C.extras) Object.assign(run, { extras: true, bestCombo, golds, bombsHit });
+    shown = [["Score", run.score], ...(C.extras ? [["Best combo", bestCombo], ["Golden hits", golds], ["Bombs hit", bombsHit]] : []), ["Hits", hits], ["Misses", misses], ["Expired", expired],
       ["Accuracy", hits + misses ? acc + "%" : "–"], ["Avg reaction", reactions.length ? run.avg + " ms" : "–"],
       ["Best reaction", reactions.length ? run.best + " ms" : "–"], ["Hits per second", run.hps.toFixed(2)], ["Time", secs.toFixed(1) + " s"]];
     valid = hits >= 3 && secs > 0;
   }
   run.k = setupKey(C); run.b = bucketOf(C); run.t = Date.now(); run.daily = isDaily ? todayKey() : null;
+  run.lbl = runLabel(C, run);
+  lastPlay = { daily: isDaily, setup: setupOf(C), seed: runSeed, challenge: activeChallenge };
 
-  $("resTitle").textContent = isDaily ? "Last run: daily challenge" : "Last run: " + KIND_NAMES[C.kind];
+  $("resTitle").textContent = isDaily ? "Last run: daily challenge" : activeChallenge ? `Last run: challenge from ${activeChallenge.name}` : "Last run: " + run.lbl;
   const grid = $("resGrid");
   grid.innerHTML = "";
   shown.forEach(([l, v]) => {
-    const d = document.createElement("div"), s = document.createElement("span"), b = document.createElement("strong");
-    s.textContent = l; b.textContent = v; d.append(s, b); grid.appendChild(d);
+    const d = document.createElement("div"), sp = document.createElement("span"), st = document.createElement("strong");
+    sp.textContent = l; st.textContent = v; d.append(sp, st); grid.appendChild(d);
   });
   $("results").style.display = "block";
   $("stop").style.display = "none";
+  $("resPb").hidden = true; $("resChallenge").hidden = true; $("resXp").textContent = "";
   overlay.style.display = "flex";
+  showTab("play");
   overlay.scrollTop = 0;
 
-  if (valid) {
-    if (isDaily) {
-      const best = getDailyBest();
-      if (best === null || run.score > best) try { localStorage.setItem("aimDaily", JSON.stringify({ date: run.daily, best: run.score })); } catch {}
-      renderDaily();
-    }
-    lastRun = run;
-    scope = isDaily ? "exact" : "similar";
-    document.querySelectorAll("[data-scope]").forEach(x => x.setAttribute("aria-pressed", x.dataset.scope === scope));
-    recordRun(run);
-  } else {
+  if (!valid) {
     lastRun = null;
+    $("analysis").style.display = "none";
+    $("chSend").hidden = true;
     renderCompare();
     notice(C.kind === "track" ? "Runs shorter than 5 seconds aren't scored." : "Runs need at least 3 hits to be scored.");
+    return;
   }
+
+  const prev = myRuns.filter(r => r.k === run.k);
+  const prevBest = prev.length ? Math.max(...prev.map(r => r.score)) : null;
+  const ctx = { run, C, pb: prevBest !== null && run.score > prevBest, bestStreak, decoyHits: shots.filter(x => x.decoy).length, challengeWon: false,
+    bestCombo, golds, bombsHit, bombsSpawned };
+  if (ctx.pb) { $("resPb").textContent = `New personal best on ${run.lbl}! Up from ${prevBest}.`; $("resPb").hidden = false; }
+  if (activeChallenge) {
+    const diff = run.score - activeChallenge.score, el = $("resChallenge");
+    el.textContent = diff > 0 ? `You beat ${activeChallenge.name} by ${diff} points! Send it back and see if they can top it.`
+      : diff < 0 ? `${activeChallenge.name} wins by ${-diff} points. Replay the same targets to try again.`
+      : `It's a tie with ${activeChallenge.name} at ${run.score} points.`;
+    el.hidden = false;
+    ctx.challengeWon = diff > 0;
+  }
+  $("chSend").hidden = false;
+  $("chSend").textContent = activeChallenge ? "Send it back" : "Challenge a friend";
+
+  if (isDaily) {
+    const best = getDailyBest();
+    if (best === null || run.score > best) try { localStorage.setItem("aimDaily", JSON.stringify({ date: run.daily, best: run.score })); } catch {}
+    if (!prog.dailyDays.includes(run.daily)) { prog.dailyDays = [...prog.dailyDays, run.daily].slice(-400); saveProg(); }
+    renderDaily();
+  }
+  saveRunLocal(run);
+  const xp = xpFor(run, ctx);
+  $("resXp").textContent = `+${xp} XP` + (ctx.pb ? " (includes a personal best bonus)" : "");
+  addXp(xp);
+  checkAchievements(ctx);
+  renderAnalysis(run);
+
+  lastRun = run;
+  scope = isDaily ? "exact" : "similar";
+  document.querySelectorAll("[data-scope]").forEach(x => x.setAttribute("aria-pressed", x.dataset.scope === scope));
+  recordRun(run);
+}
+function setupOf(c) { const o = {}; SETUP_KEYS.forEach(k => o[k] = c[k]); return o; }
+function runLabel(c, run) {
+  if (run.daily) return "the daily challenge (" + run.daily + ")";
+  for (const p of Object.values(PRESETS)) if (setupKey(normalize(presetSetup(p))) === run.k) return p.label;
+  for (const p of myPresets) if (setupKey(normalize({ ...SETUP_DEFAULTS, ...p.setup })) === run.k) return p.name;
+  return c.kind === "track" ? `Custom tracking, ${c.size} px` : `Custom ${KIND_NAMES[c.kind]}, ${c.count} target${c.count > 1 ? "s" : ""}, ${c.size} px`;
 }
 
 let ac;
-function beep() {
+function audio() { ac = ac || new AudioContext(); if (ac.state === "suspended") ac.resume(); return ac; }
+function tone(a, t, f, dur, type = "sine", vol = 0.12, fEnd) {
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (fEnd) o.frequency.exponentialRampToValueAtTime(fEnd, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function noise(a, t, dur, vol, filterType, freq) {
+  const buf = a.createBuffer(1, Math.ceil(a.sampleRate * dur), a.sampleRate), data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  const src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; f.type = filterType; f.frequency.value = freq;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  src.connect(f).connect(g).connect(a.destination); src.start(t);
+}
+const SOUNDS = {
+  beep:    (a, t, v) => tone(a, t, 900 * v, 0.07),
+  pop:     (a, t, v) => tone(a, t, 700 * v, 0.07, "sine", 0.16, 180),
+  click:   (a, t, v) => { noise(a, t, 0.03, 0.3, "highpass", 3000); tone(a, t, 2200 * v, 0.02, "square", 0.03); },
+  coin:    (a, t, v) => { tone(a, t, 988 * v, 0.08, "square", 0.05); tone(a, t + 0.08, 1319 * v, 0.22, "square", 0.05); },
+  laser:   (a, t, v) => tone(a, t, 1500 * v, 0.16, "sawtooth", 0.05, 220),
+  drum:    (a, t, v) => { tone(a, t, 170 * v, 0.18, "sine", 0.4, 45); noise(a, t, 0.05, 0.12, "lowpass", 1500); },
+  chime:   (a, t, v) => { tone(a, t, 1046 * v, 0.4, "triangle", 0.1); tone(a, t + 0.05, 1568 * v, 0.5, "triangle", 0.07); },
+  arcade:  (a, t, v) => [523, 659, 784, 1046].forEach((f, i) => tone(a, t + i * 0.04, f * v, 0.06, "square", 0.045)),
+  fanfare: (a, t, v) => { tone(a, t, 523 * v, 0.08, "triangle", 0.1); tone(a, t + 0.08, 659 * v, 0.08, "triangle", 0.1); tone(a, t + 0.16, 784 * v, 0.22, "triangle", 0.1); }
+};
+function playSound(kind) {
+  if (!S.sound) return;
   try {
-    ac = ac || new AudioContext();
-    const o = ac.createOscillator(), g = ac.createGain();
-    o.frequency.value = 900;
-    g.gain.setValueAtTime(0.12, ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.07);
-    o.connect(g).connect(ac.destination);
-    o.start(); o.stop(ac.currentTime + 0.08);
+    const a = audio(), t = a.currentTime;
+    if (kind === "bomb") { tone(a, t, 130, 0.35, "sawtooth", 0.12, 45); noise(a, t, 0.3, 0.2, "lowpass", 700); return; }
+    (SOUNDS[S.hitSound] || SOUNDS.beep)(a, t, kind === "gold" ? 1.5 : 1);
+    if (kind === "gold") tone(a, t + 0.05, 2093, 0.15, "triangle", 0.06);
   } catch {}
 }
+function previewSound(id) { try { const a = audio(); SOUNDS[id](a, a.currentTime, 1); } catch {} }
 
 // ---------- online scoreboard ----------
 let sb = null, me = null, online = false, onlineMsg = "";
@@ -883,9 +1234,14 @@ const ready = (async () => {
   }
 })();
 
-async function recordRun(run) {
-  myRuns = [...myRuns, run].slice(-60);
+function saveRunLocal(run) {
+  myRuns = [...myRuns, run].slice(-500);
   try { localStorage.setItem("aimRuns2", JSON.stringify(myRuns)); } catch {}
+  prog.runs += 1; prog.secs += run.secs;
+  if (!prog.kinds.includes(run.kind)) prog.kinds.push(run.kind);
+  saveProg();
+}
+async function recordRun(run) {
   pool = []; board = [];
   renderCompare(true);
   await ready;
@@ -896,12 +1252,14 @@ async function recordRun(run) {
       score: run.score, accuracy: run.acc, secs: run.secs,
       hits: track ? 0 : run.hits, misses: track ? 0 : run.misses,
       avg_ms: track ? null : run.avg, best_ms: track ? null : run.best,
-      hps: track ? null : run.hps, track_pct: track ? run.pct : null
+      hps: track ? null : run.hps, track_pct: track ? run.pct : null,
+      ...(run.extras ? { extras: true } : {})
     });
     onlineMsg = error ? "This run couldn't be saved to the scoreboard: " + error.message : "";
     run.saved = !error;
   }
   await Promise.all([fetchComparison(), run.daily ? fetchDaily() : null]);
+  if (run.daily) { const rank = dailyBoard.findIndex(r => r.player_id === me); if (rank >= 0 && rank < 10) unlock("top10"); }
   renderCompare();
 }
 
@@ -1059,6 +1417,458 @@ function renderCompare(loading) {
   if (!rows.length) tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${loading ? "Loading…" : "No runs yet"}</td></tr>`;
 }
 
+// ---------- XP, levels and achievements ----------
+let prog = {};
+try { prog = JSON.parse(localStorage.getItem("aimProgress") || "{}") || {}; } catch {}
+if (typeof prog.xp !== "number") prog.xp = 0;
+if (!prog.ach || typeof prog.ach !== "object") prog.ach = {};
+if (!Array.isArray(prog.dailyDays)) prog.dailyDays = [];
+if (typeof prog.runs !== "number") prog.runs = myRuns.length;
+if (typeof prog.secs !== "number") prog.secs = myRuns.reduce((a, r) => a + (r.secs || 0), 0);
+if (!Array.isArray(prog.kinds)) prog.kinds = [...new Set(myRuns.map(r => r.kind))];
+function saveProg() { try { localStorage.setItem("aimProgress", JSON.stringify(prog)); } catch {} }
+
+function levelInfo(xp) {
+  let lvl = 1, need = 100, rem = xp;
+  while (rem >= need) { rem -= need; lvl++; need = 100 + 50 * (lvl - 1); }
+  return { lvl, into: rem, need };
+}
+const rankTitle = l => l < 5 ? "Rookie" : l < 10 ? "Marksman" : l < 20 ? "Sharpshooter" : l < 30 ? "Elite" : "Legend";
+function xpFor(run, ctx) {
+  let xp = 10 + Math.round(run.secs / 3) + (run.kind === "track" ? Math.round(run.pct / 2) : run.hits + Math.round(run.acc / 10));
+  if (run.daily) xp = Math.round(xp * 1.5);
+  xp = Math.min(xp, 300);
+  if (ctx.pb) xp += 25;
+  if (ctx.challengeWon) xp += 25;
+  return xp;
+}
+function renderLevel() {
+  const L = levelInfo(prog.xp);
+  $("lvlName").textContent = `Level ${L.lvl}, ${rankTitle(L.lvl)}`;
+  $("lvlXp").textContent = `${L.into} / ${L.need} XP`;
+  $("lvlBar").style.width = (L.into / L.need * 100) + "%";
+  $("lvlNext").textContent = nextUnlockText();
+  $("badgeCount").textContent = `(${Object.keys(prog.ach).filter(id => ACH.some(a => a.id === id)).length}/${ACH.length})`;
+}
+function addXp(n) {
+  const before = levelInfo(prog.xp).lvl;
+  prog.xp += n; saveProg();
+  const after = levelInfo(prog.xp).lvl;
+  if (after > before) {
+    const got = unlocksAt(before, after);
+    toast("Level up!", `You're now level ${after}, ${rankTitle(after)}.` + (got.length ? ` Unlocked: ${got.join(", ")}.` : ""));
+    refreshUnlocks();
+  }
+  renderLevel();
+  checkAchievements({});
+}
+
+const utcPrev = k => new Date(Date.parse(k + "T00:00:00Z") - 86400000).toISOString().slice(0, 10);
+const localKey = d => { const x = new Date(d); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); };
+const localPrev = k => { const [y, m, d] = k.split("-").map(Number); return localKey(new Date(y, m - 1, d - 1)); };
+function dayStreak(set, today, prev) { let k = set.has(today) ? today : prev(today), n = 0; while (set.has(k)) { n++; k = prev(k); } return n; }
+function stats() {
+  return { runs: prog.runs, secs: prog.secs, kinds: prog.kinds.length, level: levelInfo(prog.xp).lvl,
+    dailyStreak: dayStreak(new Set(prog.dailyDays), todayKey(), utcPrev) };
+}
+const ACH = [
+  { id: "first", name: "First shot", desc: "Finish your first scored run.", test: (c, s) => s.runs >= 1 },
+  { id: "runs10", name: "Warming up", desc: "Finish 10 runs.", test: (c, s) => s.runs >= 10, goal: s => [s.runs, 10] },
+  { id: "runs50", name: "Dedicated", desc: "Finish 50 runs.", test: (c, s) => s.runs >= 50, goal: s => [s.runs, 50] },
+  { id: "runs200", name: "Aim addict", desc: "Finish 200 runs.", test: (c, s) => s.runs >= 200, goal: s => [s.runs, 200] },
+  { id: "time30", name: "Marathon", desc: "Play for 30 minutes in total.", test: (c, s) => s.secs >= 1800, goal: s => [Math.floor(s.secs / 60), 30] },
+  { id: "explorer", name: "Explorer", desc: "Play clicking, switching and tracking.", test: (c, s) => s.kinds >= 3, goal: s => [s.kinds, 3] },
+  { id: "quick", name: "Quick draw", desc: "Get a single reaction under 250 ms.", test: c => c.run && c.run.kind !== "track" && c.run.best > 0 && c.run.best < 250 },
+  { id: "lightning", name: "Lightning", desc: "Average under 350 ms in a run with 20+ hits.", test: c => c.run && c.run.hits >= 20 && c.run.avg < 350 },
+  { id: "sharp", name: "Sharpshooter", desc: "100% accuracy with 30+ hits (misses must count).", test: c => c.run && c.run.hits >= 30 && c.run.misses === 0 && (c.C.countMisses || c.C.kind === "switch") },
+  { id: "tiny", name: "Pinpoint", desc: "Hit 20 targets of 20 px or smaller in one run.", test: c => c.run && c.run.hits >= 20 && c.C.size + c.C.sizeVar <= 20 },
+  { id: "speed", name: "Speed demon", desc: "Average 3 hits per second over 15+ seconds.", test: c => c.run && c.run.hps >= 3 && c.run.secs >= 15 },
+  { id: "hundred", name: "Triple digits", desc: "Land 100 hits in a single run.", test: c => c.run && c.run.hits >= 100 },
+  { id: "switch50", name: "Switch hitter", desc: "50 hits in a switching run without touching a decoy.", test: c => c.run && c.run.kind === "switch" && c.run.hits >= 50 && c.decoyHits === 0 },
+  { id: "glued", name: "Glued on", desc: "Stay on target 90% of a 30+ second tracking run.", test: c => c.run && c.run.kind === "track" && c.run.pct >= 90 && c.run.secs >= 30 },
+  { id: "steady", name: "Steady hands", desc: "Hold a 10 second tracking streak.", test: c => c.run && c.run.kind === "track" && c.bestStreak >= 10 },
+  { id: "pb", name: "New record", desc: "Beat your personal best on a setup.", test: c => !!c.pb },
+  { id: "daily1", name: "Daily player", desc: "Play a daily challenge.", test: () => prog.dailyDays.length >= 1 },
+  { id: "daily3", name: "On a roll", desc: "Play the daily challenge 3 days in a row.", test: (c, s) => s.dailyStreak >= 3, goal: s => [s.dailyStreak, 3] },
+  { id: "daily7", name: "Week warrior", desc: "Play the daily challenge 7 days in a row.", test: (c, s) => s.dailyStreak >= 7, goal: s => [s.dailyStreak, 7] },
+  { id: "top10", name: "Top ten", desc: "Reach the daily challenge top 10." },
+  { id: "sent", name: "Challenger", desc: "Send a challenge to a friend." },
+  { id: "won", name: "Champion", desc: "Win a friend's challenge.", test: c => !!c.challengeWon },
+  { id: "preset", name: "Custom maker", desc: "Save your own preset." },
+  { id: "combo30", name: "Combo master", desc: "Reach a 30 hit combo with arcade extras on.", test: c => c.run && c.bestCombo >= 30 },
+  { id: "goldrush", name: "Gold rush", desc: "Hit 10 golden targets in one run.", test: c => c.run && c.golds >= 10 },
+  { id: "bombsquad", name: "Bomb squad", desc: "Dodge every bomb in a 30+ second run (at least 5 bombs).", test: c => c.run && c.run.secs >= 30 && c.bombsSpawned >= 5 && c.bombsHit === 0 },
+  { id: "lvl10", name: "Rising star", desc: "Reach level 10.", test: (c, s) => s.level >= 10, goal: s => [s.level, 10] },
+  { id: "lvl25", name: "Veteran", desc: "Reach level 25.", test: (c, s) => s.level >= 25, goal: s => [s.level, 25] }
+];
+function checkAchievements(ctx) {
+  const s = stats();
+  for (const a of ACH) {
+    if (prog.ach[a.id] || !a.test) continue;
+    let ok = false;
+    try { ok = a.test(ctx, s); } catch {}
+    if (ok) unlock(a.id);
+  }
+}
+function unlock(id) {
+  if (prog.ach[id]) return;
+  const a = ACH.find(x => x.id === id);
+  if (!a) return;
+  prog.ach[id] = Date.now(); saveProg();
+  const got = unlocksForAch(id);
+  toast("Achievement unlocked: " + a.name, `${a.desc} +50 XP` + (got.length ? ` Unlocked: ${got.join(", ")}.` : ""));
+  if (got.length) refreshUnlocks();
+  addXp(50);
+}
+function renderBadges() {
+  const s = stats(), got = ACH.filter(a => prog.ach[a.id]).length;
+  $("badgeSummary").textContent = `${got} of ${ACH.length} unlocked. Each one is worth 50 XP.`;
+  const grid = $("badgeGrid");
+  grid.innerHTML = "";
+  ACH.forEach(a => {
+    const d = document.createElement("div"), n = document.createElement("strong"), t = document.createElement("span"), st = document.createElement("span");
+    d.className = "badge" + (prog.ach[a.id] ? "" : " locked");
+    n.textContent = a.name; t.textContent = a.desc;
+    if (prog.ach[a.id]) { st.className = "got"; st.textContent = "Unlocked " + new Date(prog.ach[a.id]).toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+    else if (a.goal) { const [cur, goal] = a.goal(s); st.textContent = `${Math.min(cur, goal)} / ${goal}`; }
+    else st.textContent = "Locked";
+    d.append(n, t, st); grid.appendChild(d);
+  });
+}
+function toast(title, body) {
+  const t = document.createElement("div"), s = document.createElement("strong");
+  t.className = "toast"; s.textContent = title; t.append(s, body);
+  $("toasts").appendChild(t);
+  setTimeout(() => t.remove(), 4500);
+}
+
+// ---------- unlocks ----------
+const UNLOCKS = {
+  crosshair: [
+    { id: "system", name: "System cursor" }, { id: "cross", name: "Cross" }, { id: "crossdot", name: "Cross with dot" },
+    { id: "dot", name: "Dot" }, { id: "circle", name: "Circle" },
+    { id: "tee", name: "T-shape", lvl: 3 }, { id: "chevron", name: "Chevron", lvl: 6 }, { id: "brackets", name: "Brackets", lvl: 9 },
+    { id: "triangle", name: "Triangle", lvl: 12 }, { id: "star", name: "Starburst", lvl: 16 }, { id: "plasma", name: "Plasma ring", lvl: 22 },
+    { id: "pro", name: "Pro scope", ach: "sharp" }
+  ],
+  skin: [
+    { id: "solid", name: "Solid dot" }, { id: "ring", name: "Ring" }, { id: "bullseye", name: "Bullseye" },
+    { id: "diamond", name: "Diamond", lvl: 2 }, { id: "hex", name: "Hexagon", lvl: 5 }, { id: "glass", name: "Glass", lvl: 8 },
+    { id: "pixel", name: "Pixel", lvl: 11 }, { id: "neon", name: "Neon", lvl: 15 }, { id: "planet", name: "Planet", lvl: 20 },
+    { id: "gold", name: "Solid gold", ach: "goldrush" }
+  ],
+  sound: [
+    { id: "beep", name: "Beep" }, { id: "pop", name: "Pop", lvl: 2 }, { id: "click", name: "Click", lvl: 4 },
+    { id: "coin", name: "Coin", lvl: 7 }, { id: "laser", name: "Laser", lvl: 10 }, { id: "drum", name: "Drum", lvl: 13 },
+    { id: "chime", name: "Chime", lvl: 18 }, { id: "arcade", name: "Arcade", lvl: 25 }, { id: "fanfare", name: "Fanfare", ach: "daily7" }
+  ]
+};
+const CAT = { crosshair: { key: "xStyle", word: "crosshair" }, skin: { key: "style", word: "target skin" }, sound: { key: "hitSound", word: "hit sound" } };
+const isUnlocked = it => it.lvl ? levelInfo(prog.xp).lvl >= it.lvl : it.ach ? !!prog.ach[it.ach] : true;
+const reqText = it => it.lvl ? `Reach level ${it.lvl}` : `Achievement: ${(ACH.find(a => a.id === it.ach) || {}).name}`;
+function buildUnlockSelects() {
+  document.querySelectorAll("[data-unlock]").forEach(sel => {
+    const cat = sel.dataset.unlock, key = CAT[cat].key;
+    if (!UNLOCKS[cat].some(it => it.id === S[key] && isUnlocked(it))) S[key] = UNLOCKS[cat][cat === "crosshair" ? 2 : 0].id;
+    sel.innerHTML = "";
+    UNLOCKS[cat].forEach(it => {
+      const o = document.createElement("option");
+      o.value = it.id; o.disabled = !isUnlocked(it);
+      o.textContent = it.name + (o.disabled ? ` (${it.lvl ? "level " + it.lvl : reqText(it)})` : "");
+      sel.appendChild(o);
+    });
+    sel.value = S[key];
+  });
+}
+function unlocksAt(fromLvl, toLvl) {
+  const out = [];
+  for (const cat in UNLOCKS) UNLOCKS[cat].forEach(it => { if (it.lvl && it.lvl > fromLvl && it.lvl <= toLvl) out.push(`${it.name} ${CAT[cat].word}`); });
+  return out;
+}
+function unlocksForAch(id) {
+  const out = [];
+  for (const cat in UNLOCKS) UNLOCKS[cat].forEach(it => { if (it.ach === id) out.push(`${it.name} ${CAT[cat].word}`); });
+  return out;
+}
+function nextUnlockText() {
+  const lvl = levelInfo(prog.xp).lvl;
+  let best = null;
+  for (const cat in UNLOCKS) UNLOCKS[cat].forEach(it => { if (it.lvl && it.lvl > lvl && (!best || it.lvl < best.lvl)) best = { ...it, cat }; });
+  return best ? `Next unlock at level ${best.lvl}: ${best.name} ${CAT[best.cat].word}` : "Every level unlock collected!";
+}
+function refreshUnlocks() {
+  buildUnlockSelects(); fillForm();
+  if (!$("tab-unlocks").hidden) renderUnlocks();
+}
+function renderUnlocks() {
+  const boxes = { crosshair: $("unlockCrosshair"), skin: $("unlockSkin"), sound: $("unlockSound") };
+  for (const cat in UNLOCKS) {
+    const box = boxes[cat];
+    box.innerHTML = "";
+    UNLOCKS[cat].forEach(it => {
+      const open = isUnlocked(it), on = S[CAT[cat].key] === it.id;
+      const card = document.createElement("div");
+      card.className = "item" + (open ? "" : " locked") + (on ? " equipped" : "");
+      const prev = document.createElement("div");
+      prev.className = "prev";
+      if (cat === "crosshair") prev.innerHTML = it.id === "system" ? `<span class="hint" style="font-size:.8rem">Your cursor</span>` : crosshairSVG(S, it.id).svg;
+      else if (cat === "skin") { const t = document.createElement("div"); t.className = "target" + (it.id === "solid" ? "" : " " + it.id); prev.appendChild(t); }
+      else { const b = document.createElement("button"); b.textContent = "▶ Play"; b.setAttribute("aria-label", "Play " + it.name); b.addEventListener("click", () => previewSound(it.id)); prev.appendChild(b); }
+      const name = document.createElement("strong"); name.textContent = it.name;
+      const note = document.createElement("span"); note.textContent = open ? (on ? "Equipped" : "Unlocked") : reqText(it);
+      card.append(prev, name, note);
+      if (open && !on) {
+        const eq = document.createElement("button"); eq.textContent = "Equip";
+        eq.addEventListener("click", () => { S[CAT[cat].key] = it.id; fillForm(); renderUnlocks(); });
+        card.appendChild(eq);
+      }
+      box.appendChild(card);
+    });
+  }
+}
+
+// ---------- tabs ----------
+function showTab(id) {
+  document.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === id));
+  ["play", "progress", "badges", "unlocks"].forEach(t => $("tab-" + t).hidden = t !== id);
+  if (id === "unlocks") renderUnlocks();
+  if (id === "progress") renderProgress();
+  if (id === "badges") renderBadges();
+}
+document.querySelectorAll("[data-tab]").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+// ---------- challenges ----------
+let pendingChallenge = null;
+function loadChallenge() {
+  const m = location.hash.match(/challenge=([\w-]+)/);
+  if (!m) return;
+  history.replaceState(null, "", location.pathname + location.search);
+  const o = decodeObj(m[1]);
+  if (!o || !o.s || typeof o.s !== "object" || !Number.isFinite(o.sc) || !Number.isFinite(o.sd)) { notice("That challenge link didn't work."); return; }
+  const setup = { ...SETUP_DEFAULTS, ...cleanSetup(o.s) };
+  pendingChallenge = { setup, seed: o.sd >>> 0, score: clamp(Math.round(o.sc), 0, 1000000), name: String(o.n || "A friend").slice(0, 20) };
+  $("chText").textContent = `${pendingChallenge.name} challenges you to beat ${pendingChallenge.score} points.`;
+  $("chSetup").textContent = describeSetup(normalize(setup)) + " You'll get exactly the same targets they did.";
+  $("challengeCard").hidden = false;
+}
+$("chAccept").addEventListener("click", () => {
+  if (!pendingChallenge) return;
+  $("challengeCard").hidden = true;
+  const c = pendingChallenge;
+  start(false, { setup: c.setup, seed: c.seed, challenge: { name: c.name, score: c.score } });
+});
+$("chDismiss").addEventListener("click", () => { $("challengeCard").hidden = true; });
+$("chSend").addEventListener("click", async () => {
+  if (!lastRun || !lastPlay) return;
+  const url = location.origin + location.pathname + "#challenge=" + encodeObj({ v: 1, s: lastPlay.setup, sd: lastPlay.seed, sc: lastRun.score, n: playerName });
+  const text = `I scored ${lastRun.score} on ${lastRun.lbl} in Aim Trainer. Think you can beat it?`;
+  unlock("sent");
+  if (navigator.share) {
+    try { await navigator.share({ title: "Aim Trainer challenge", text, url }); return; }
+    catch (e) { if (e && e.name === "AbortError") return; }
+  }
+  try { await navigator.clipboard.writeText(text + " " + url); notice("Challenge link copied. Send it to a friend!"); }
+  catch { window.prompt("Copy this challenge link:", url); }
+});
+$("replay").addEventListener("click", () => {
+  if (lastPlay) start(lastPlay.daily, { setup: lastPlay.setup, seed: lastPlay.seed, challenge: lastPlay.challenge });
+});
+
+// ---------- run analysis ----------
+const avgOf = a => a.reduce((x, y) => x + y, 0) / a.length;
+const fmtMs = v => Math.round(v) + " ms", fmtPct = v => Math.round(v) + "%";
+function dirWords(dx, dy) {
+  const p = [];
+  if (dy > 0.15) p.push("low"); else if (dy < -0.15) p.push("high");
+  if (dx > 0.15) p.push("to the right"); else if (dx < -0.15) p.push("to the left");
+  return p.join(" and ");
+}
+function regionCells() {
+  const rows = ["top", "middle", "bottom"], cols = ["left", "center", "right"], cells = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+    const inCell = regionLog.filter(h => Math.min(2, Math.floor(h.y * 3)) === r && Math.min(2, Math.floor(h.x * 3)) === c);
+    cells.push({ r, c, n: inCell.length, avg: inCell.length ? Math.round(avgOf(inCell.map(h => h.ms))) : null,
+      name: r === 1 && c === 1 ? "center" : `${rows[r]} ${cols[c]}` });
+  }
+  return cells;
+}
+function renderAnalysis(run) {
+  $("analysis").style.display = "block";
+  const ul = $("anText");
+  ul.innerHTML = "";
+  const say = t => { const li = document.createElement("li"); li.textContent = t; ul.appendChild(li); };
+
+  if (run.kind === "track") {
+    $("an3Wrap").hidden = true;
+    const n = trackSamples.length;
+    if (n < 10) { say("This run was too short to analyze."); $("an1").innerHTML = $("an2").innerHTML = ""; return; }
+    const pct = a => a.length ? Math.round(a.filter(x => x.on).length / a.length * 100) : 0;
+    const p1 = pct(trackSamples.slice(0, n >> 1)), p2 = pct(trackSamples.slice(n >> 1));
+    if (Math.abs(p1 - p2) >= 8) say(p1 > p2
+      ? `You held on better in the first half (${p1}%) than the second (${p2}%), so you might be tiring out. A looser grip can help.`
+      : `You got better as the run went on (${p1}% in the first half, ${p2}% in the second). A short warm-up before scored runs could help.`);
+    else say(`Your tracking stayed consistent through the run (${p1}% in the first half, ${p2}% in the second).`);
+    const off = trackSamples.filter(x => !x.on && Math.hypot(x.along, x.side) < 6);
+    if (C.speed === 0) say("The target wasn't moving in this setup. Raise the target speed for real tracking practice.");
+    else if (off.length >= 5) {
+      const bp = Math.round(off.filter(x => x.along < -0.5).length / off.length * 100);
+      const ap = Math.round(off.filter(x => x.along > 0.5).length / off.length * 100);
+      if (bp >= 55) say(`When you lose the target you're usually behind it (${bp}% of the time). Try leading it slightly instead of chasing it.`);
+      else if (ap >= 55) say(`When you lose the target you're usually ahead of it (${ap}% of the time). You may be guessing its turns too early.`);
+      else say(`When you lose the target it's a mix: behind it ${bp}% of the time, ahead of it ${ap}%, and off to the side the rest.`);
+    } else say("You barely lost the target at all. Time to try a faster setup.");
+    const secs = Math.ceil(trackSamples[n - 1].sec), perSec = [];
+    for (let i = 0; i < secs; i++) { const inSec = trackSamples.filter(x => Math.floor(x.sec) === i); perSec.push(inSec.length ? inSec.filter(x => x.on).length / inSec.length * 100 : 0); }
+    $("an1Title").textContent = "Time on target, second by second";
+    $("an1").innerHTML = barsSVG(perSec, 100, fmtPct, "Start", "End", "");
+    $("an2Title").textContent = "Where your crosshair was, compared to the target";
+    $("an2").innerHTML = trackFrameSVG(trackSamples);
+    return;
+  }
+
+  $("an3Wrap").hidden = false;
+  if (run.extras) {
+    say(`Your best combo was ${bestCombo} (${comboMult(bestCombo)}x). You hit ${golds} golden target${golds === 1 ? "" : "s"}.`);
+    if (bombsHit) say(`You hit ${bombsHit} bomb${bombsHit === 1 ? "" : "s"}, which cost ${bombsHit * 250} points and broke your combo each time.`);
+    else if (bombsSpawned) say(`You dodged all ${bombsSpawned} bombs.`);
+  }
+  const miss = shots.filter(x => !x.hit && !x.bomb), decoy = miss.filter(x => x.decoy).length;
+  const near = miss.filter(x => !x.decoy && x.dist != null && x.dist <= 2), far = miss.length - decoy - near.length;
+  const pl = (n, w) => `${n} ${w}${n === 1 ? "" : (w.endsWith("s") ? "es" : "s")}`;
+  if (!miss.length) say(bombsHit ? "No regular misses. Only the bombs got you." : "No misses at all. Clean run!");
+  else say(`${pl(miss.length, "miss")}: ${pl(near.length, "near miss")} just off a target and ${pl(far, "wild click")}` + (run.kind === "switch" ? `, plus ${pl(decoy, "decoy hit")}.` : "."));
+  const dir = near.filter(x => x.along != null);
+  if (dir.length >= 3) {
+    const over = dir.filter(x => x.along > 0).length, under = dir.length - over;
+    if (over >= under * 1.5) say(`Most of your near misses overshoot (${over} of ${dir.length}), landing past the target in the direction you were moving. Try slowing down just before you click.`);
+    else if (under >= over * 1.5) say(`Most of your near misses undershoot (${under} of ${dir.length}), so you're clicking before you reach the target. Try committing to the full flick.`);
+    else say(`Your near misses are split between overshooting (${over}) and undershooting (${under}).`);
+  }
+  const close = shots.filter(x => x.dist != null && x.dist <= 2 && !x.decoy);
+  if (close.length >= 5) {
+    const w = dirWords(avgOf(close.map(x => x.dx)), avgOf(close.map(x => x.dy)));
+    say(w ? `Your clicks tend to land ${w} of center.` : "Your clicks are well centered on the targets.");
+  }
+  const cells = regionCells(), filled = cells.filter(c => c.n >= 2);
+  if (filled.length >= 2) {
+    const slow = filled.reduce((a, b) => b.avg > a.avg ? b : a), fast = filled.reduce((a, b) => b.avg < a.avg ? b : a);
+    if (slow.avg - fast.avg >= 40) say(`You're slowest on targets in the ${slow.name} (${slow.avg} ms) and fastest in the ${fast.name} (${fast.avg} ms).`);
+  }
+  $("an1Title").textContent = "Where you clicked";
+  $("an1").innerHTML = heatmapSVG(shots);
+  $("an2Title").textContent = "Where clicks landed on the target";
+  $("an2").innerHTML = targetViewSVG(shots.filter(x => x.dx != null && !x.decoy));
+  $("an3Title").textContent = "Reaction time by screen area";
+  $("an3").innerHTML = regionSVG(cells);
+}
+function heatmapSVG(list) {
+  const w = 600, h = clamp(Math.round(600 * fieldAspect), 200, 480);
+  let out = `<rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="10" fill="var(--field)" opacity="0.45" stroke="var(--line)"/>`;
+  list.filter(x => !x.hit).forEach(x => out += `<circle cx="${x.x * w}" cy="${x.y * h}" r="7" fill="none" stroke="var(--miss)" stroke-width="2.5"/>`);
+  list.filter(x => x.hit).forEach(x => out += `<circle cx="${x.x * w}" cy="${x.y * h}" r="6" fill="var(--accent)" opacity="0.8"/>`);
+  out += `<circle cx="14" cy="${h + 18}" r="6" fill="var(--accent)"/>` + txt(28, h + 23, "Hits", "start")
+       + `<circle cx="84" cy="${h + 18}" r="6" fill="none" stroke="var(--miss)" stroke-width="2.5"/>` + txt(98, h + 23, "Misses", "start");
+  return `<svg viewBox="0 0 ${w} ${h + 32}" role="img" aria-label="Map of where you clicked on the screen">${out}</svg>`;
+}
+function targetViewSVG(list) {
+  const S2 = 300, c = 150, R = 52;
+  let out = `<circle cx="${c}" cy="${c}" r="${R * 2}" fill="none" stroke="var(--line)" stroke-width="2" stroke-dasharray="6 6"/>`
+          + `<circle cx="${c}" cy="${c}" r="${R}" fill="var(--accent)" fill-opacity="0.15" stroke="var(--accent)" stroke-width="2"/>`;
+  list.forEach(x => {
+    const d = Math.hypot(x.dx, x.dy), k = d > 2.6 ? 2.6 / d : 1;
+    out += x.hit
+      ? `<circle cx="${c + x.dx * k * R}" cy="${c + x.dy * k * R}" r="4.5" fill="var(--accent)" opacity="0.85"/>`
+      : `<circle cx="${c + x.dx * k * R}" cy="${c + x.dy * k * R}" r="5" fill="none" stroke="var(--miss)" stroke-width="2"/>`;
+  });
+  const close = list.filter(x => Math.hypot(x.dx, x.dy) <= 2);
+  if (close.length >= 3) {
+    const mx = c + avgOf(close.map(x => x.dx)) * R, my = c + avgOf(close.map(x => x.dy)) * R;
+    out += `<path d="M${mx - 9} ${my}H${mx + 9}M${mx} ${my - 9}V${my + 9}" stroke="var(--text)" stroke-width="2.5"/>`;
+  }
+  out += txt(c, S2 + 20, "Solid ring: the target. Dashed: near-miss zone. Cross: your average.");
+  return `<svg viewBox="0 0 ${S2} ${S2 + 30}" role="img" aria-label="Where your clicks landed relative to target centers">${out}</svg>`;
+}
+function regionSVG(cells) {
+  const w = 600, h = 330, cw = w / 3, ch = h / 3;
+  const vals = cells.filter(c => c.avg !== null).map(c => c.avg), lo = Math.min(...vals), hi = Math.max(...vals);
+  let out = "";
+  cells.forEach(c => {
+    const x = c.c * cw, y = c.r * ch;
+    const f = c.avg === null ? 0 : hi > lo ? (c.avg - lo) / (hi - lo) : 0.5;
+    out += `<rect x="${x + 3}" y="${y + 3}" width="${cw - 6}" height="${ch - 6}" rx="8" fill="${c.avg === null ? "var(--ui)" : "var(--miss)"}" fill-opacity="${c.avg === null ? 1 : 0.12 + f * 0.6}" stroke="var(--line)"/>`;
+    out += `<text x="${x + cw / 2}" y="${y + ch / 2 + 7}" text-anchor="middle" font-size="20" fill="${c.avg === null ? "var(--muted)" : "var(--text)"}">${c.avg === null ? "–" : c.avg + " ms"}</text>`;
+  });
+  out += txt(w / 2, h + 22, "Stronger red means slower");
+  return `<svg viewBox="0 0 ${w} ${h + 30}" role="img" aria-label="Average reaction time in each area of the screen">${out}</svg>`;
+}
+function barsSVG(vals, maxV, yFmt, xFirst, xLast, xTitle) {
+  const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b, bw = iw / Math.max(1, vals.length);
+  let out = "";
+  vals.forEach((v, i) => {
+    const h = v / maxV * ih;
+    out += `<rect x="${PAD.l + i * bw + 1}" y="${H - PAD.b - h}" width="${Math.max(1, bw - 2)}" height="${h}" rx="2" fill="var(--accent)" opacity="0.75"/>`;
+  });
+  out += frame([[PAD.l + bw / 2 + 10, xFirst], [PAD.l + iw - bw / 2 - 10, xLast]], [[PAD.t, yFmt(maxV)], [H - PAD.b, yFmt(0)]], xTitle);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Bar chart">${out}</svg>`;
+}
+function trackFrameSVG(list) {
+  const S2 = 300, c = 150, R = 38;
+  let out = `<circle cx="${c}" cy="${c}" r="${R}" fill="var(--accent)" fill-opacity="0.12" stroke="var(--accent)" stroke-width="2"/>`;
+  list.forEach(x => {
+    const d = Math.hypot(x.side, x.along), k = d > 3.3 ? 3.3 / d : 1;
+    out += `<circle cx="${c + x.side * k * R}" cy="${c - x.along * k * R}" r="3" fill="${x.on ? "var(--accent)" : "var(--miss)"}" opacity="${x.on ? 0.45 : 0.7}"/>`;
+  });
+  out += txt(c, 16, "Ahead of the target") + txt(c, S2 - 4, "Behind the target");
+  return `<svg viewBox="0 0 ${S2} ${S2}" role="img" aria-label="Your crosshair position relative to the moving target">${out}</svg>`;
+}
+
+// ---------- progress dashboard ----------
+let progKind = "click";
+document.querySelectorAll("[data-pk]").forEach(b => b.addEventListener("click", () => { progKind = b.dataset.pk; renderProgress(); }));
+const fmtDur = s => { const m = Math.round(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
+const shortDate = k => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
+function renderProgress() {
+  document.querySelectorAll("[data-pk]").forEach(b => b.setAttribute("aria-pressed", b.dataset.pk === progKind));
+  const days = new Set(myRuns.map(r => localKey(r.t)));
+  const tot = $("progTotals");
+  tot.innerHTML = "";
+  [["Runs", prog.runs], ["Time played", fmtDur(prog.secs)], ["Days played", days.size],
+   ["Day streak", dayStreak(days, localKey(Date.now()), localPrev)], ["Achievements", `${ACH.filter(a => prog.ach[a.id]).length}/${ACH.length}`]]
+    .forEach(([l, v]) => { const d = document.createElement("div"), sp = document.createElement("span"), st = document.createElement("strong"); sp.textContent = l; st.textContent = v; d.append(sp, st); tot.appendChild(d); });
+
+  const track = progKind === "track", runs = myRuns.filter(r => r.kind === progKind);
+  const empty = msg => `<div class="empty">${msg}</div>`;
+  const byDay = new Map();
+  runs.forEach(r => { const k = localKey(r.t); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(track ? r.pct : r.avg); });
+  const dayKeys = [...byDay.keys()].sort().slice(-30);
+  $("prog1Title").textContent = track ? "Average time on target per day" : "Average reaction time per day";
+  $("prog1").innerHTML = dayKeys.length >= 2
+    ? lineSVG(dayKeys.map(k => avgOf(byDay.get(k))), track ? fmtPct : fmtMs, track ? "Higher is better" : "Lower is faster", [shortDate(dayKeys[0]), shortDate(dayKeys[dayKeys.length - 1])])
+    : empty("Play on at least two different days to see a trend");
+  const keys = []; let k = localKey(Date.now());
+  for (let i = 0; i < 30; i++) { keys.unshift(k); k = localPrev(k); }
+  const cnt = new Map(); runs.forEach(r => { const kk = localKey(r.t); cnt.set(kk, (cnt.get(kk) || 0) + 1); });
+  const counts = keys.map(x => cnt.get(x) || 0);
+  $("prog2").innerHTML = runs.length ? barsSVG(counts, Math.max(1, ...counts), v => Math.round(v), shortDate(keys[0]), "Today", "") : empty("No runs of this type yet");
+
+  const groups = new Map();
+  runs.forEach(r => { if (!groups.has(r.k)) groups.set(r.k, []); groups.get(r.k).push(r); });
+  $("pbHead").innerHTML = track ? "<tr><th>Setup</th><th>Best score</th><th>Best on target</th><th>Runs</th><th>Last played</th></tr>"
+    : "<tr><th>Setup</th><th>Best score</th><th>Best hits/s</th><th>Best avg reaction</th><th>Runs</th></tr>";
+  const body = $("pbBody");
+  body.innerHTML = "";
+  [...groups.values()].sort((a, b) => b.length - a.length).slice(0, 15).forEach(list => {
+    const latest = list[list.length - 1];
+    const cells = track
+      ? [latest.lbl || "Setup", Math.max(...list.map(r => r.score)), Math.max(...list.map(r => r.pct)).toFixed(1) + "%", list.length, shortDate(localKey(latest.t))]
+      : [latest.lbl || "Setup", Math.max(...list.map(r => r.score)), Math.max(...list.map(r => r.hps)).toFixed(2), Math.min(...list.map(r => r.avg)) + " ms", list.length];
+    const tr = document.createElement("tr");
+    cells.forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+    body.appendChild(tr);
+  });
+  if (!groups.size) body.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">No runs of this type yet</td></tr>`;
+}
+
 // ---------- tiny SVG charts ----------
 const W = 600, H = 260, PAD = { l: 52, r: 16, t: 20, b: 40 };
 const txt = (x, y, s, anchor = "middle") => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="14" fill="var(--muted)">${s}</text>`;
@@ -1103,7 +1913,7 @@ function scatterSVG(pool, mine) {
     [[y(100), "100%"], [y(50), "50%"], [y(0), "0%"]], "Reaction time (top left is fast and accurate)");
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of reaction time against accuracy with your run highlighted">${out}</svg>`;
 }
-function lineSVG(vals, fmt, title) {
+function lineSVG(vals, fmt, title, xl = ["Older", "Latest"]) {
   const [lo, hi] = range(vals, 0.15);
   const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
   const x = i => PAD.l + i / (vals.length - 1) * iw, y = v => H - PAD.b - (v - lo) / (hi - lo) * ih;
@@ -1112,7 +1922,7 @@ function lineSVG(vals, fmt, title) {
     const lastPt = i === vals.length - 1;
     out += `<circle cx="${x(i)}" cy="${y(v)}" r="${lastPt ? 7 : 4}" fill="${lastPt ? "var(--accent)" : "var(--muted)"}"/>`;
   });
-  out += frame([[x(0), "Older"], [x(vals.length - 1), "Latest"]], [[y(hi), fmt(hi)], [y(lo), fmt(lo)]], title);
+  out += frame([[x(0), xl[0]], [x(vals.length - 1), xl[1]]], [[y(hi), fmt(hi)], [y(lo), fmt(lo)]], title);
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your recent runs">${out}</svg>`;
 }
 
@@ -1127,9 +1937,12 @@ document.addEventListener("keydown", e => {
   }
 });
 
+buildUnlockSelects();
 fillForm();
 renderPresets();
 loadSharedSetup();
+loadChallenge();
+renderLevel();
 renderDaily();
 setInterval(() => { if (!running) renderDaily(); }, 30000);
 </script>
