@@ -10,7 +10,7 @@
   :root {
     --ui: #1A2250; --ui-2: #232D66; --line: #3A4690; --text: #F2F1FF; --muted: #A9AEDD;
     --accent: #FFC83D; --accent-ink: #2B1B00;
-    --field: #2B3A8C; --target: #FFC83D;
+    --field: #2B3A8C; --target: #FFC83D; --decoy: #7F89CF;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -20,6 +20,7 @@
   }
   :root[data-theme="light"] { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; }
   *, *::before, *::after { box-sizing: inherit; }
+  [hidden] { display: none !important; }
   html, body { height: 100%; margin: 0; }
   body {
     background: var(--ui); color: var(--text);
@@ -35,30 +36,39 @@
   header .stat strong { color: var(--text); font-weight: 500; }
   #stop { margin-left: auto; display: none; }
   #field { position: relative; flex: 1; overflow: hidden; background: var(--field); touch-action: none; }
+
   .target {
-    position: absolute; border-radius: 50%; background: var(--target);
-    transform: translate(-50%, -50%); will-change: transform;
+    --tc: var(--target);
+    position: absolute; border-radius: 50%; background: var(--tc);
+    transform: translate(-50%, -50%); will-change: transform; pointer-events: none;
   }
-  .target.ring { background: transparent; border: 4px solid var(--target); }
-  .target.bullseye { background: radial-gradient(circle, var(--target) 0 22%, transparent 23% 45%, var(--target) 46% 100%); }
+  .target.ring { background: transparent; border: 4px solid var(--tc); }
+  .target.bullseye { background: radial-gradient(circle, var(--tc) 0 22%, transparent 23% 45%, var(--tc) 46% 100%); }
+  .target.decoy { --tc: var(--decoy); opacity: 0.75; }
+  .target.lit { box-shadow: 0 0 0 4px color-mix(in srgb, var(--target) 45%, transparent); }
+  .target.on { box-shadow: 0 0 0 5px var(--text); }
   .pop {
     position: absolute; border-radius: 50%; border: 2px solid var(--target);
     transform: translate(-50%, -50%); pointer-events: none; animation: pop 0.25s ease-out forwards;
   }
   @keyframes pop { to { transform: translate(-50%, -50%) scale(1.8); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) { .pop { display: none; } }
+  #xhair { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5; display: none; }
 
   #overlay {
-    position: absolute; inset: 0; overflow-y: auto; padding: 1.5rem 1rem;
-    background: color-mix(in srgb, var(--ui) 88%, transparent);
+    position: absolute; inset: 0; overflow-y: auto; padding: 1.5rem 1rem 3rem; z-index: 10;
+    background: color-mix(in srgb, var(--ui) 90%, transparent);
     display: flex; justify-content: center; align-items: flex-start;
   }
-  .panel { width: 100%; max-width: 44rem; display: grid; gap: 1.25rem; }
+  .panel { width: 100%; max-width: 46rem; display: grid; gap: 1.25rem; }
   h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); font-weight: 700; letter-spacing: -0.01em; }
   h2 { margin: 0 0 0.6rem; font-size: 1.05rem; font-weight: 500; color: var(--muted); }
+  h3 { margin: 0 0 0.4rem; font-size: 0.95rem; font-weight: 500; }
   .hint { margin: 0.25rem 0 0; color: var(--muted); }
+  .top { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; justify-content: space-between; }
   .card { background: var(--ui-2); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)); gap: 0.85rem 1rem; }
+  .sub { margin-top: 1rem; }
   label { display: grid; gap: 0.3rem; font-size: 0.95rem; }
   label.check { display: flex; align-items: center; gap: 0.5rem; }
   label small { color: var(--muted); font-size: 0.8rem; }
@@ -74,23 +84,28 @@
   }
   button:hover { border-color: var(--accent); }
   button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .presets { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
-  #start { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; font-size: 1.15rem; padding: 0.7rem 2rem; }
-  #results { display: none; }
+  .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  .big { font-size: 1.15rem; padding: 0.7rem 2rem; }
+  .row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 0.4rem; }
+  .seg button[aria-pressed="true"], .scope button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+  .chip button { border: none; border-radius: 0; }
+  .chip button + button { border-left: 1px solid var(--line); padding: 0.5rem 0.75rem; color: var(--muted); }
+  #notice { background: var(--accent); color: var(--accent-ink); border-radius: 12px; padding: 0.7rem 1rem; }
+  .xrow { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; align-items: start; }
+  #xPreview { width: 6.5rem; height: 6.5rem; border-radius: 12px; background: var(--field); display: grid; place-items: center; border: 1px solid var(--line); }
+
+  #results, #compare { display: none; }
   .res { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; }
   .res div { display: grid; gap: 0.15rem; }
   .res span { color: var(--muted); font-size: 0.85rem; }
   .res strong { font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums; }
-
-  #compare { display: none; }
   .scope { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.9rem; color: var(--muted); }
-  .scope button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .facts { margin: 0 0 1rem; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
   .facts strong { font-weight: 500; }
   .note { color: var(--muted); margin: 0 0 1rem; }
   .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
-  .chart h3 { margin: 0 0 0.4rem; font-size: 0.95rem; font-weight: 500; }
   .chart svg { width: 100%; height: auto; display: block; }
   .chart .empty { color: var(--muted); font-size: 0.9rem; padding: 2rem 0; text-align: center; }
   .board { overflow-x: auto; margin-top: 1rem; }
@@ -98,127 +113,175 @@
   th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
   tr.you td { color: var(--accent); font-weight: 500; }
+  .daily-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem; align-items: start; }
+  #dDesc { margin: 0.2rem 0 0.8rem; font-size: 1.05rem; max-width: 60ch; }
 </style>
 </head>
 <body>
   <header>
-    <span class="stat">Hits <strong id="hHits">0</strong></span>
-    <span class="stat">Misses <strong id="hMiss">0</strong></span>
-    <span class="stat">Accuracy <strong id="hAcc">–</strong></span>
-    <span class="stat"><span id="hTimeLabel">Time</span> <strong id="hTime">0.0</strong>s</span>
+    <span class="stat" id="s1"><span>Hits</span> <strong>0</strong></span>
+    <span class="stat" id="s2"><span>Misses</span> <strong>0</strong></span>
+    <span class="stat" id="s3"><span>Accuracy</span> <strong>–</strong></span>
+    <span class="stat"><span id="tLbl">Time</span> <strong id="tVal">0.0</strong>s</span>
     <button id="stop">Stop (Esc)</button>
   </header>
 
   <main id="field">
+    <div id="xhair"></div>
     <div id="overlay">
       <div class="panel">
-        <div>
-          <h1>Aim trainer</h1>
-          <p class="hint">Set it up how you like, then press Start or Space. Esc ends a run early.</p>
+        <div class="top">
+          <div>
+            <h1>Aim trainer</h1>
+            <p class="hint">Press Start or Space to play. Esc ends a run early.</p>
+          </div>
+          <button class="primary big" data-start>Start</button>
         </div>
 
-        <section class="card">
-          <h2>Player</h2>
-          <div class="grid">
-            <label>Name on the leaderboard
-              <input type="text" id="playerName" maxlength="20" autocomplete="nickname"></label>
-          </div>
-        </section>
+        <div id="notice" role="status" hidden></div>
 
         <section class="card" id="results" aria-live="polite">
-          <h2>Last run</h2>
-          <div class="res">
-            <div><span>Hits</span><strong id="rHits"></strong></div>
-            <div><span>Misses</span><strong id="rMiss"></strong></div>
-            <div><span>Expired</span><strong id="rExp"></strong></div>
-            <div><span>Accuracy</span><strong id="rAcc"></strong></div>
-            <div><span>Avg reaction</span><strong id="rAvg"></strong></div>
-            <div><span>Best reaction</span><strong id="rBest"></strong></div>
-            <div><span>Hits per second</span><strong id="rHps"></strong></div>
-            <div><span>Time</span><strong id="rTime"></strong></div>
-          </div>
+          <h2 id="resTitle">Last run</h2>
+          <div class="res" id="resGrid"></div>
         </section>
 
         <section class="card" id="compare" aria-live="polite">
           <h2>How you compare</h2>
           <div class="scope">Compare with
-            <button data-scope="same" aria-pressed="true">Same setup</button>
-            <button data-scope="all" aria-pressed="false">All setups</button>
+            <button data-scope="similar" aria-pressed="true">Similar setups</button>
+            <button data-scope="exact" aria-pressed="false">Exact setup</button>
+            <button data-scope="all" aria-pressed="false">Everyone</button>
           </div>
           <p class="note" id="cNote"></p>
           <ul class="facts" id="cFacts"></ul>
           <div class="charts">
-            <div class="chart"><h3>Average reaction time across runs</h3><div id="chHist"></div></div>
-            <div class="chart"><h3>Reaction time vs accuracy</h3><div id="chScatter"></div></div>
-            <div class="chart"><h3>Your reaction time over your recent runs</h3><div id="chHistory"></div></div>
+            <div class="chart"><h3 id="chHistTitle"></h3><div id="chHist"></div></div>
+            <div class="chart" id="chScatterWrap"><h3>Reaction time vs accuracy</h3><div id="chScatter"></div></div>
+            <div class="chart"><h3 id="chHistoryTitle"></h3><div id="chHistory"></div></div>
           </div>
           <div class="board">
-            <h3 style="margin:0 0 0.4rem;font-size:0.95rem;font-weight:500">Top players (best hits per second)</h3>
-            <table>
-              <thead><tr><th>#</th><th>Player</th><th>Hits/s</th><th>Avg reaction</th><th>Accuracy</th></tr></thead>
-              <tbody id="cBoard"></tbody>
-            </table>
+            <h3 id="boardTitle">Top players</h3>
+            <table><thead id="cHead"></thead><tbody id="cBoard"></tbody></table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="daily-head">
+            <div>
+              <h2>Daily challenge</h2>
+              <p class="hint" id="dDate"></p>
+            </div>
+            <button class="primary" id="dPlay">Play today's challenge</button>
+          </div>
+          <p id="dDesc"></p>
+          <p class="hint" id="dMine"></p>
+          <div class="board">
+            <h3>Today's top players</h3>
+            <table><thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead><tbody id="dBoard"></tbody></table>
+          </div>
+          <div class="grid sub">
+            <label>Your name on the leaderboards
+              <input type="text" id="playerName" maxlength="20" autocomplete="nickname"></label>
           </div>
         </section>
 
         <section class="card">
           <h2>Presets</h2>
-          <div class="presets">
-            <button data-preset="grid">Multi-target</button>
-            <button data-preset="precision">Precision</button>
-            <button data-preset="flick">Flick</button>
-            <button data-preset="reflex">Reflex</button>
-            <button data-preset="default">Reset to default</button>
+          <div class="row" id="builtins"></div>
+          <h3 class="sub">Your presets</h3>
+          <div class="row" id="myPresets"></div>
+          <div class="row sub">
+            <input type="text" id="presetName" maxlength="24" placeholder="Name this setup" style="max-width:16rem">
+            <button id="savePreset">Save current setup</button>
+            <button id="shareLink">Copy share link</button>
           </div>
+          <p class="hint">Presets and share links hold the game setup only. Your crosshair, mouse and colors stay yours.</p>
         </section>
 
         <section class="card">
-          <h2>Targets</h2>
-          <div class="grid">
-            <label>Targets on screen at once
+          <h2>Game setup</h2>
+          <div class="seg" role="group" aria-label="Game type">
+            <button data-kind="click">Clicking</button>
+            <button data-kind="switch">Switching</button>
+            <button data-kind="track">Tracking</button>
+          </div>
+          <p class="hint" id="kindHint"></p>
+          <div class="grid sub">
+            <label data-for="click switch"><span id="countLbl">Targets on screen at once</span>
               <input type="number" data-key="count" min="1" max="30"></label>
-            <label>Target size (px)
+            <label data-for="click switch track">Target size (px)
               <input type="number" data-key="size" min="6" max="200"></label>
-            <label>Random size variation (±px)
+            <label data-for="click switch">Random size variation (±px)
               <input type="number" data-key="sizeVar" min="0" max="100"></label>
-            <label>Target lifetime (ms)
+            <label data-for="click switch"><span id="lifeLbl">Target lifetime (ms)</span>
               <input type="number" data-key="lifetime" min="0" max="10000" step="50">
-              <small>0 means targets stay until hit</small></label>
-            <label>Size over lifetime
+              <small>0 means no time limit</small></label>
+            <label data-for="click switch">Size over lifetime
               <select data-key="sizeMode">
                 <option value="fixed">Stays the same</option>
                 <option value="shrink">Shrinks</option>
                 <option value="grow">Grows</option>
-              </select>
-              <small>Uses lifetime, or 2 s if lifetime is 0</small></label>
-            <label>Movement speed (px/s)
-              <input type="number" data-key="speed" min="0" max="1500" step="10">
-              <small>0 keeps targets still</small></label>
-            <label>Respawn delay (ms)
+              </select></label>
+            <label data-for="click switch track"><span id="speedLbl">Movement speed (px/s)</span>
+              <input type="number" data-key="speed" min="0" max="1500" step="10"></label>
+            <label data-for="track">Changes direction about every (ms)
+              <input type="number" data-key="turnEvery" min="100" max="5000" step="50"></label>
+            <label data-for="click">Respawn delay (ms)
               <input type="number" data-key="respawn" min="0" max="5000" step="50"></label>
-            <label>Min gap between targets (px)
+            <label data-for="click">Random extra delay up to (ms)
+              <input type="number" data-key="respawnMax" min="0" max="5000" step="50">
+              <small>For reflex training. 0 turns it off</small></label>
+            <label data-for="click switch">Min gap between targets (px)
               <input type="number" data-key="spacing" min="0" max="300"></label>
-            <label>Spawn area (% of screen)
-              <input type="number" data-key="area" min="10" max="100" step="5">
-              <small>Smaller keeps targets near the center</small></label>
+            <label data-for="click switch">Spawn area (% of screen)
+              <input type="number" data-key="area" min="10" max="100" step="5"></label>
+            <label class="check" data-for="track"><input type="checkbox" data-key="holdToTrack"> Only counts while holding the mouse button</label>
           </div>
-        </section>
-
-        <section class="card">
-          <h2>Session</h2>
+          <h3 class="sub">Session</h3>
           <div class="grid">
-            <label>Run ends
+            <label data-for="click switch">Run ends
               <select data-key="mode">
                 <option value="time">After a set time</option>
                 <option value="hits">After a number of hits</option>
                 <option value="endless">Never (stop with Esc)</option>
               </select></label>
-            <label>Duration (seconds)
+            <label data-for="click switch track">Duration (seconds)
               <input type="number" data-key="duration" min="5" max="600"></label>
-            <label>Hit goal
+            <label data-for="click switch">Hit goal
               <input type="number" data-key="goal" min="1" max="1000"></label>
-            <label class="check"><input type="checkbox" data-key="countMisses"> Count clicks on empty space as misses</label>
-            <label class="check"><input type="checkbox" data-key="missEnds"> A miss ends the run</label>
+            <label class="check" data-for="click switch"><input type="checkbox" data-key="countMisses"> Count clicks on empty space as misses</label>
+            <label class="check" data-for="click switch"><input type="checkbox" data-key="missEnds"> A miss ends the run</label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Crosshair and mouse</h2>
+          <div class="xrow">
+            <div id="xPreview" aria-label="Crosshair preview"></div>
+            <div class="grid">
+              <label>Crosshair
+                <select data-key="xStyle">
+                  <option value="system">System cursor</option>
+                  <option value="cross">Cross</option>
+                  <option value="crossdot">Cross with dot</option>
+                  <option value="dot">Dot</option>
+                  <option value="circle">Circle</option>
+                </select></label>
+              <label>Color <input type="color" data-key="xColor"></label>
+              <label>Line length (px)
+                <input type="number" data-key="xSize" min="1" max="40"></label>
+              <label>Thickness (px)
+                <input type="number" data-key="xThick" min="1" max="10"></label>
+              <label>Center gap (px)
+                <input type="number" data-key="xGap" min="0" max="30"></label>
+              <label class="check"><input type="checkbox" data-key="xOutline"> Dark outline</label>
+            </div>
+          </div>
+          <div class="grid sub">
+            <label class="check"><input type="checkbox" data-key="lock"> Lock the mouse to the game while playing</label>
+            <label>Sensitivity
+              <input type="number" data-key="sens" min="0.05" max="10" step="0.05">
+              <small>Only applies while the mouse is locked. 1 is normal speed</small></label>
           </div>
         </section>
 
@@ -232,21 +295,14 @@
                 <option value="bullseye">Bullseye</option>
               </select></label>
             <label>Target color <input type="color" data-key="targetColor"></label>
+            <label>Decoy color (switching) <input type="color" data-key="decoyColor"></label>
             <label>Background color <input type="color" data-key="bgColor"></label>
-            <label>Cursor
-              <select data-key="cursor">
-                <option value="crosshair">Crosshair</option>
-                <option value="dot">Small dot</option>
-                <option value="default">Normal arrow</option>
-              </select></label>
             <label class="check"><input type="checkbox" data-key="sound"> Sound on hit</label>
             <label class="check"><input type="checkbox" data-key="hitEffect"> Hit effect</label>
           </div>
         </section>
 
-        <div class="actions">
-          <button id="start">Start</button>
-        </div>
+        <div class="row"><button class="primary big" data-start>Start</button></div>
       </div>
     </div>
   </main>
@@ -261,25 +317,42 @@ const SUPABASE_ANON_KEY = "sb_publishable_MjWm0KAkShhDFun5DTLyfg_zgQRegeg";
 
 const $ = id => document.getElementById(id);
 const field = $("field"), overlay = $("overlay");
-
-const DEFAULTS = {
-  count: 1, size: 50, sizeVar: 0, lifetime: 0, sizeMode: "fixed", speed: 0,
-  respawn: 0, spacing: 10, area: 100,
-  mode: "time", duration: 30, goal: 50, countMisses: true, missEnds: false,
-  style: "solid", targetColor: "#FFC83D", bgColor: "#2B3A8C", cursor: "crosshair",
-  sound: true, hitEffect: true
-};
-const PRESETS = {
-  default: {},
-  grid:      { count: 3, size: 60, spacing: 20, area: 60, duration: 60 },
-  precision: { count: 1, size: 18, area: 70, duration: 30 },
-  flick:     { count: 1, size: 45, lifetime: 1000, sizeMode: "shrink", duration: 30 },
-  reflex:    { count: 1, size: 60, lifetime: 600, respawn: 500, area: 50, duration: 30 }
-};
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // ---------- settings ----------
-let S = { ...DEFAULTS };
-try { Object.assign(S, JSON.parse(localStorage.getItem("aimSettings") || "{}")); } catch {}
+const SETUP_DEFAULTS = {
+  kind: "click", count: 1, size: 50, sizeVar: 0, lifetime: 0, sizeMode: "fixed", speed: 0, turnEvery: 600,
+  holdToTrack: false, respawn: 0, respawnMax: 0, spacing: 10, area: 100,
+  mode: "time", duration: 30, goal: 50, countMisses: true, missEnds: false
+};
+const LOOK_DEFAULTS = {
+  style: "solid", targetColor: "#FFC83D", decoyColor: "#7F89CF", bgColor: "#2B3A8C", sound: true, hitEffect: true,
+  xStyle: "crossdot", xColor: "#FFFFFF", xSize: 8, xThick: 2, xGap: 4, xOutline: true, lock: false, sens: 1
+};
+const ALL_DEFAULTS = { ...SETUP_DEFAULTS, ...LOOK_DEFAULTS };
+const SETUP_KEYS = Object.keys(SETUP_DEFAULTS);
+const PRESETS = {
+  default:   { label: "Default" },
+  grid:      { label: "Multi-target", count: 3, size: 60, spacing: 20, area: 60, duration: 60 },
+  precision: { label: "Precision", size: 18, area: 70 },
+  flick:     { label: "Flick", size: 45, lifetime: 1000, sizeMode: "shrink" },
+  reflex:    { label: "Reflex", size: 60, lifetime: 800, respawn: 400, respawnMax: 1500, area: 50 },
+  switching: { label: "Switching", kind: "switch", count: 4, size: 50, area: 80 },
+  tracking:  { label: "Tracking", kind: "track", size: 50, speed: 300, turnEvery: 600 }
+};
+const presetSetup = p => { const { label, ...rest } = p; return { ...SETUP_DEFAULTS, ...rest }; };
+const KIND_NAMES = { click: "clicking", switch: "switching", track: "tracking" };
+const KIND_HINTS = {
+  click: "Hit the targets as fast as you can.",
+  switch: "Several targets are on screen but only the lit one counts. Hitting the others is a miss.",
+  track: "Keep your crosshair on the moving target for as long as you can."
+};
+
+let S = { ...ALL_DEFAULTS };
+try {
+  const saved = JSON.parse(localStorage.getItem("aimSettings") || "{}");
+  for (const k in ALL_DEFAULTS) if (k in saved && typeof saved[k] === typeof ALL_DEFAULTS[k]) S[k] = saved[k];
+} catch {}
 
 const inputs = document.querySelectorAll("[data-key]");
 function fillForm() {
@@ -287,171 +360,478 @@ function fillForm() {
     const k = el.dataset.key;
     if (el.type === "checkbox") el.checked = S[k]; else el.value = S[k];
   });
-  applyLook();
+  readForm();
 }
 function readForm() {
   inputs.forEach(el => {
     const k = el.dataset.key;
     if (el.type === "checkbox") S[k] = el.checked;
     else if (el.type === "number") {
-      const v = Number(el.value), lo = Number(el.min), hi = Number(el.max);
-      S[k] = isNaN(v) ? DEFAULTS[k] : Math.min(hi, Math.max(lo, v));
-    } else S[k] = el.value;
+      const v = Number(el.value);
+      S[k] = isNaN(v) || el.value === "" ? ALL_DEFAULTS[k] : clamp(v, Number(el.min), Number(el.max));
+      el.value = S[k];
+    } else if (el.type === "color") S[k] = /^#[0-9a-f]{6}$/i.test(el.value) ? el.value : ALL_DEFAULTS[k];
+    else S[k] = el.value || ALL_DEFAULTS[k];
   });
-  try { localStorage.setItem("aimSettings", JSON.stringify(S)); } catch {}
+  saveSettings();
   applyLook();
 }
-const DOT_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><circle cx='8' cy='8' r='3' fill='white' stroke='black' stroke-width='1.5'/></svg>") 8 8, crosshair`;
+function saveSettings() { try { localStorage.setItem("aimSettings", JSON.stringify(S)); } catch {} }
 function applyLook() {
-  document.documentElement.style.setProperty("--field", S.bgColor);
-  document.documentElement.style.setProperty("--target", S.targetColor);
-  field.style.cursor = S.cursor === "dot" ? DOT_CURSOR : S.cursor;
+  const r = document.documentElement.style;
+  r.setProperty("--field", S.bgColor);
+  r.setProperty("--target", S.targetColor);
+  r.setProperty("--decoy", S.decoyColor);
+  document.querySelectorAll("[data-kind]").forEach(b => b.setAttribute("aria-pressed", b.dataset.kind === S.kind));
+  document.querySelectorAll("[data-for]").forEach(l => l.hidden = !l.dataset.for.split(" ").includes(S.kind));
+  $("kindHint").textContent = KIND_HINTS[S.kind];
+  $("countLbl").textContent = S.kind === "switch" ? "Targets on screen (one is lit)" : "Targets on screen at once";
+  $("lifeLbl").textContent = S.kind === "switch" ? "Time to hit the lit target (ms)" : "Target lifetime (ms)";
+  $("speedLbl").textContent = S.kind === "track" ? "Target speed (px/s)" : "Movement speed (px/s)";
+  buildXhair();
 }
 inputs.forEach(el => el.addEventListener("change", readForm));
-document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
-  S = { ...DEFAULTS, ...PRESETS[b.dataset.preset], targetColor: S.targetColor, bgColor: S.bgColor, cursor: S.cursor, style: S.style };
-  fillForm(); readForm();
-}));
+document.querySelectorAll("[data-kind]").forEach(b => b.addEventListener("click", () => { S.kind = b.dataset.kind; fillForm(); }));
+function applySetup(setup) {
+  for (const k of SETUP_KEYS) S[k] = setup[k] ?? SETUP_DEFAULTS[k];
+  fillForm();
+}
+
+// ---------- notice ----------
+let noticeTimer;
+function notice(msg) {
+  const n = $("notice");
+  n.textContent = msg; n.hidden = false;
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => n.hidden = true, 5000);
+}
+
+// ---------- presets and share links ----------
+Object.entries(PRESETS).forEach(([id, p]) => {
+  const b = document.createElement("button");
+  b.textContent = p.label;
+  b.addEventListener("click", () => { applySetup(presetSetup(p)); notice(`Loaded the ${p.label} preset.`); });
+  $("builtins").appendChild(b);
+});
+let myPresets = [];
+try { myPresets = JSON.parse(localStorage.getItem("aimPresets") || "[]").filter(p => p && p.name && p.setup); } catch {}
+function savePresets() { try { localStorage.setItem("aimPresets", JSON.stringify(myPresets)); } catch {} }
+function renderPresets() {
+  const box = $("myPresets");
+  box.innerHTML = "";
+  if (!myPresets.length) {
+    const p = document.createElement("span"); p.className = "hint"; p.textContent = "None saved yet.";
+    box.appendChild(p); return;
+  }
+  myPresets.forEach((p, i) => {
+    const chip = document.createElement("span"); chip.className = "chip";
+    const use = document.createElement("button"); use.textContent = p.name;
+    use.addEventListener("click", () => { applySetup(p.setup); notice(`Loaded "${p.name}".`); });
+    const del = document.createElement("button"); del.textContent = "×"; del.setAttribute("aria-label", `Delete preset ${p.name}`);
+    del.addEventListener("click", () => { myPresets.splice(i, 1); savePresets(); renderPresets(); });
+    chip.append(use, del); box.appendChild(chip);
+  });
+}
+function currentSetup() { const o = {}; SETUP_KEYS.forEach(k => o[k] = S[k]); return o; }
+$("savePreset").addEventListener("click", () => {
+  readForm();
+  const name = $("presetName").value.trim().slice(0, 24) || "Setup " + (myPresets.length + 1);
+  const existing = myPresets.findIndex(p => p.name === name);
+  if (existing >= 0) myPresets[existing].setup = currentSetup(); else myPresets.push({ name, setup: currentSetup() });
+  savePresets(); renderPresets();
+  $("presetName").value = "";
+  notice(`Saved "${name}".`);
+});
+function encodeSetup(o) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function decodeSetup(str) {
+  try {
+    let b = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (b.length % 4) b += "=";
+    const o = JSON.parse(decodeURIComponent(escape(atob(b))));
+    const out = {};
+    SETUP_KEYS.forEach(k => { if (k in o && typeof o[k] === typeof SETUP_DEFAULTS[k]) out[k] = o[k]; });
+    return out;
+  } catch { return null; }
+}
+$("shareLink").addEventListener("click", async () => {
+  readForm();
+  const link = location.origin + location.pathname + "#setup=" + encodeSetup(currentSetup());
+  try { await navigator.clipboard.writeText(link); notice("Share link copied. Anyone who opens it gets this exact setup."); }
+  catch { window.prompt("Copy this link:", link); }
+});
+function loadSharedSetup() {
+  const m = location.hash.match(/setup=([\w-]+)/);
+  if (!m) return;
+  const setup = decodeSetup(m[1]);
+  history.replaceState(null, "", location.pathname + location.search);
+  if (!setup) { notice("That share link didn't work, so your own settings are loaded."); return; }
+  applySetup({ ...SETUP_DEFAULTS, ...setup });
+  notice("Loaded a shared setup. Press Start to try it.");
+}
+
+// ---------- setup identity (for comparisons) ----------
+function normalize(c) {
+  c = { ...c };
+  if (c.kind === "track") { c.mode = "time"; c.count = 1; }
+  if (c.kind === "switch") c.count = Math.max(2, c.count);
+  return c;
+}
+const KIND_KEYS = {
+  click: ["count", "size", "sizeVar", "lifetime", "sizeMode", "speed", "respawn", "respawnMax", "spacing", "area", "countMisses", "missEnds"],
+  switch: ["count", "size", "sizeVar", "lifetime", "sizeMode", "speed", "spacing", "area", "countMisses", "missEnds"],
+  track: ["size", "speed", "turnEvery", "holdToTrack"]
+};
+function setupKey(c) {
+  const session = c.kind === "track" || c.mode === "time" ? "t" + c.duration : c.mode === "hits" ? "h" + c.goal : "e";
+  return c.kind + ":" + KIND_KEYS[c.kind].map(k => c[k]).join(",") + ":" + session;
+}
+function sizeWord(s) { return s < 30 ? "small" : s < 60 ? "medium" : "large"; }
+function bucketOf(c) {
+  if (c.kind === "track") return `track|${sizeWord(c.size)}|${c.speed < 200 ? "slow" : c.speed < 450 ? "medium" : "fast"}`;
+  const n = c.count <= 1 ? "1" : c.count <= 3 ? "2-3" : "4+";
+  const timed = c.lifetime > 0 ? (c.lifetime <= 800 ? "short" : "long") : "none";
+  return `${c.kind}|${n}|${sizeWord(c.size)}|${c.speed > 0 ? "moving" : "still"}|${timed}`;
+}
+function bucketLabel(b) {
+  const p = b.split("|");
+  if (p[0] === "track") return `tracking a ${p[1]} target at ${p[2]} speed`;
+  const n = p[1] === "1" ? "1 target" : p[1] + " targets";
+  const timed = p[4] === "none" ? "no time limit" : p[4] === "short" ? "a short time limit" : "a time limit";
+  return `${KIND_NAMES[p[0]]}, ${n}, ${p[2]} size, ${p[3]}, ${timed}`;
+}
+function setupName(key) {
+  if (key === setupKey(normalize(dailySetup()))) return "today's challenge";
+  for (const p of Object.values(PRESETS)) if (setupKey(normalize(presetSetup(p))) === key) return "the " + p.label + " preset";
+  return "this exact setup";
+}
+
+// ---------- daily challenge ----------
+const todayKey = () => new Date().toISOString().slice(0, 10);
+function hashStr(s) {
+  let h = 1779033703 ^ s.length;
+  for (let i = 0; i < s.length; i++) { h = Math.imul(h ^ s.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; }
+  return h >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function dailySetup(day = todayKey()) {
+  const r = mulberry32(hashStr(day));
+  const between = (a, b, step = 1) => a + Math.floor(r() * ((b - a) / step + 1)) * step;
+  const base = { ...SETUP_DEFAULTS, mode: "time", duration: 30, countMisses: true, missEnds: false, spacing: 20 };
+  const pick = r();
+  if (pick < 0.5) return { ...base, kind: "click", count: between(1, 3), size: between(30, 60, 5),
+    lifetime: r() < 0.5 ? 0 : between(700, 1500, 100), sizeMode: r() < 0.35 ? "shrink" : "fixed",
+    speed: r() < 0.3 ? between(60, 200, 20) : 0, area: between(60, 100, 10) };
+  if (pick < 0.75) return { ...base, kind: "switch", count: between(3, 5), size: between(40, 60, 5),
+    lifetime: r() < 0.5 ? 0 : between(1000, 1600, 100), area: between(70, 100, 10) };
+  return { ...base, kind: "track", size: between(40, 70, 5), speed: between(200, 450, 25), turnEvery: between(400, 900, 50) };
+}
+function describeSetup(c) {
+  const parts = [];
+  if (c.kind === "track") {
+    parts.push(`Tracking: follow a ${c.size} px target moving at ${c.speed} px/s`, `turning about every ${c.turnEvery} ms`);
+    if (c.holdToTrack) parts.push("hold the mouse button to score");
+  } else {
+    parts.push(c.kind === "switch" ? `Switching: ${c.count} targets, hit only the lit one` : `Clicking: ${c.count} target${c.count > 1 ? "s" : ""} at a time`);
+    parts.push(`${c.size} px`);
+    if (c.lifetime) parts.push(c.kind === "switch" ? `${c.lifetime} ms to hit each lit target` : `targets vanish after ${c.lifetime} ms`);
+    if (c.sizeMode !== "fixed") parts.push(c.sizeMode === "shrink" ? "shrinking" : "growing");
+    if (c.speed) parts.push(`moving at ${c.speed} px/s`);
+  }
+  parts.push(`${c.duration} seconds`);
+  return parts.join(", ") + ".";
+}
+function msToNextDay() { const n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1) - n.getTime(); }
+let shownDay = "";
+function getDailyBest() {
+  try { const d = JSON.parse(localStorage.getItem("aimDaily") || "{}"); return d.date === todayKey() ? d.best : null; } catch { return null; }
+}
+function renderDaily() {
+  const day = todayKey();
+  const left = msToNextDay(), h = Math.floor(left / 3600000), m = Math.floor(left % 3600000 / 60000);
+  $("dDate").textContent = `Same challenge for everyone today. A new one starts in ${h}h ${m}m.`;
+  $("dDesc").textContent = describeSetup(dailySetup(day));
+  const best = getDailyBest();
+  const rank = dailyBoard.findIndex(r => r.player_id === me);
+  $("dMine").textContent = (best === null ? "You haven't played today's challenge yet." : `Your best today: ${best}.`)
+    + (rank >= 0 ? ` You're #${rank + 1} of ${dailyBoard.length} players.` : "");
+  if (day !== shownDay) { shownDay = day; fetchDaily(); }
+}
+
+// ---------- crosshair ----------
+function crosshairSVG(o) {
+  const st = o.xStyle === "system" ? "crossdot" : o.xStyle;
+  const L = o.xSize, T = o.xThick, G = o.xGap;
+  const D = Math.ceil((st === "dot" ? T : G + L) * 2 + T + 8), c = D / 2;
+  const shapes = [];
+  if (st === "cross" || st === "crossdot") shapes.push(
+    `<rect x="${c - T / 2}" y="${c - G - L}" width="${T}" height="${L}"/>`,
+    `<rect x="${c - T / 2}" y="${c + G}" width="${T}" height="${L}"/>`,
+    `<rect x="${c - G - L}" y="${c - T / 2}" width="${L}" height="${T}"/>`,
+    `<rect x="${c + G}" y="${c - T / 2}" width="${L}" height="${T}"/>`);
+  if (st !== "cross") { const d = Math.max(2, T); shapes.push(`<rect x="${c - d / 2}" y="${c - d / 2}" width="${d}" height="${d}" rx="${d / 2}"/>`); }
+  const ring = st === "circle" ? `<circle cx="${c}" cy="${c}" r="${G + L / 2}" fill="none" stroke="${o.xColor}" stroke-width="${T}"/>` : "";
+  const outline = o.xOutline
+    ? `<g fill="none" stroke="#000" stroke-width="2" opacity="0.8">${shapes.join("")}${st === "circle" ? `<circle cx="${c}" cy="${c}" r="${G + L / 2}" stroke-width="${T + 2}"/>` : ""}</g>` : "";
+  return { svg: `<svg width="${D}" height="${D}" viewBox="0 0 ${D} ${D}" aria-hidden="true">${outline}${ring}<g fill="${o.xColor}">${shapes.join("")}</g></svg>`, size: D };
+}
+let xSize = 0;
+function buildXhair() {
+  const { svg, size } = crosshairSVG(S);
+  $("xhair").innerHTML = svg; xSize = size;
+  $("xPreview").innerHTML = S.xStyle === "system" ? `<span class="hint" style="text-align:center;font-size:.8rem">System cursor</span>` : svg;
+}
+function drawXhair() { if (cx !== null) $("xhair").style.transform = `translate(${cx - xSize / 2}px, ${cy - xSize / 2}px)`; }
 
 // ---------- game state ----------
-let running = false, startTime = 0, hits = 0, misses = 0, expired = 0;
+let C = null, isDaily = false, rand = Math.random;
+let running = false, startTime = 0, last = 0, hits = 0, misses = 0, expired = 0;
 let reactions = [], targets = [], timeouts = [];
+let onTime = 0, trackTime = 0, streak = 0, bestStreak = 0, held = false;
+let cx = null, cy = null, locked = false;
 
-function randomSize() {
-  return Math.max(6, S.size + (Math.random() * 2 - 1) * S.sizeVar);
-}
-function spawn() {
-  if (!running) return;
+function spawn(lit = true) {
+  if (!running) return null;
   const W = field.clientWidth, H = field.clientHeight;
-  const size = randomSize(), r = size / 2;
-  const aw = W * S.area / 100, ah = H * S.area / 100;
+  const size = C.kind === "track" ? C.size : Math.max(6, C.size + (rand() * 2 - 1) * C.sizeVar), r = size / 2;
+  const areaPct = C.kind === "track" ? 60 : C.area;
+  const aw = W * areaPct / 100, ah = H * areaPct / 100;
   const x0 = Math.max(r, (W - aw) / 2 + r), x1 = Math.min(W - r, (W + aw) / 2 - r);
   const y0 = Math.max(r, (H - ah) / 2 + r), y1 = Math.min(H - r, (H + ah) / 2 - r);
   let x, y;
   for (let i = 0; i < 40; i++) {
-    x = x0 + Math.random() * Math.max(0, x1 - x0);
-    y = y0 + Math.random() * Math.max(0, y1 - y0);
-    if (targets.every(t => Math.hypot(t.x - x, t.y - y) >= r + t.size / 2 + S.spacing)) break;
+    x = x0 + rand() * Math.max(0, x1 - x0);
+    y = y0 + rand() * Math.max(0, y1 - y0);
+    if (targets.every(t => Math.hypot(t.x - x, t.y - y) >= r + t.size / 2 + C.spacing)) break;
   }
   const el = document.createElement("div");
-  el.className = "target" + (S.style !== "solid" ? " " + S.style : "");
+  el.className = "target" + (S.style !== "solid" ? " " + S.style : "") + (lit ? "" : " decoy");
   el.style.width = el.style.height = size + "px";
-  const angle = Math.random() * Math.PI * 2;
-  const t = { el, x, y, size, born: performance.now(), vx: Math.cos(angle) * S.speed, vy: Math.sin(angle) * S.speed };
+  const angle = rand() * Math.PI * 2, now = performance.now();
+  const t = { el, x, y, size, scale: 1, lit, litAt: now, vx: Math.cos(angle) * C.speed, vy: Math.sin(angle) * C.speed, nextTurn: now + C.turnEvery };
   place(t);
-  el.addEventListener("pointerdown", e => { e.stopPropagation(); hit(t, e); });
   field.appendChild(el);
   targets.push(t);
+  return t;
 }
 function place(t) { t.el.style.left = t.x + "px"; t.el.style.top = t.y + "px"; }
-function queueSpawn() {
-  if (S.respawn > 0) timeouts.push(setTimeout(spawn, S.respawn)); else spawn();
-}
+function setScale(t, s) { t.scale = s; t.el.style.transform = `translate(-50%, -50%) scale(${s})`; }
 function removeTarget(t) { t.el.remove(); targets = targets.filter(o => o !== t); }
+function queueSpawn() {
+  const delay = C.respawn + (C.respawnMax > 0 ? rand() * C.respawnMax : 0);
+  if (delay > 0) timeouts.push(setTimeout(() => spawn(), delay)); else spawn();
+}
+function light(t) { t.lit = true; t.litAt = performance.now(); t.el.classList.remove("decoy"); t.el.classList.add("lit"); }
+function unlight(t) { t.lit = false; t.el.classList.remove("lit"); t.el.classList.add("decoy"); setScale(t, 1); }
+function lightRandom(exclude) {
+  let pool = targets.filter(x => !x.lit && x !== exclude);
+  if (!pool.length) pool = targets.filter(x => !x.lit);
+  if (pool.length) light(pool[Math.floor(rand() * pool.length)]);
+}
 
-function hit(t, e) {
+function pointerPos(e) { const r = field.getBoundingClientRect(); cx = e.clientX - r.left; cy = e.clientY - r.top; }
+field.addEventListener("pointermove", e => { if (!locked) { pointerPos(e); drawXhair(); } });
+document.addEventListener("mousemove", e => {
+  if (!locked) return;
+  cx = clamp(cx + e.movementX * S.sens, 0, field.clientWidth);
+  cy = clamp(cy + e.movementY * S.sens, 0, field.clientHeight);
+  drawXhair();
+});
+field.addEventListener("pointerdown", e => {
   if (!running) return;
-  e.preventDefault();
-  reactions.push(performance.now() - t.born);
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  if (!locked) pointerPos(e);
+  held = true;
+  if (C.kind !== "track") shoot();
+});
+document.addEventListener("pointerup", () => held = false);
+
+function shoot() {
+  const now = performance.now();
+  let best = null, bestD = Infinity, hitDecoy = false;
+  for (const t of targets) {
+    const d = Math.hypot(t.x - cx, t.y - cy);
+    if (d > t.size * t.scale / 2 + 1) continue;
+    if (t.lit) { if (d < bestD) { best = t; bestD = d; } } else hitDecoy = true;
+  }
+  if (best) return hit(best, now);
+  if (hitDecoy || C.countMisses) { misses++; updateHud(); if (C.missEnds) end(); }
+}
+function hit(t, now) {
+  reactions.push(now - t.litAt);
   hits++;
   if (S.hitEffect) {
     const p = document.createElement("div");
     p.className = "pop";
     p.style.left = t.x + "px"; p.style.top = t.y + "px";
-    p.style.width = p.style.height = t.size + "px";
+    p.style.width = p.style.height = t.size * t.scale + "px";
     field.appendChild(p);
     setTimeout(() => p.remove(), 300);
   }
   if (S.sound) beep();
   removeTarget(t);
   updateHud();
-  if (S.mode === "hits" && hits >= S.goal) return end();
-  queueSpawn();
+  if (C.mode === "hits" && hits >= C.goal) return end();
+  if (C.kind === "switch") lightRandom(spawn(false)); else queueSpawn();
 }
-field.addEventListener("pointerdown", () => {
-  if (!running || !S.countMisses) return;
-  misses++;
-  updateHud();
-  if (S.missEnds) end();
-});
 
-// ---------- loop ----------
-let last = 0;
 function loop(now) {
   if (!running) return;
-  const dt = (now - last) / 1000; last = now;
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
   const elapsed = (now - startTime) / 1000;
-  if (S.mode === "time") {
-    $("hTime").textContent = Math.max(0, S.duration - elapsed).toFixed(1);
-    if (elapsed >= S.duration) return end();
-  } else $("hTime").textContent = elapsed.toFixed(1);
+  if (C.mode === "time") {
+    $("tVal").textContent = Math.max(0, C.duration - elapsed).toFixed(1);
+    if (elapsed >= C.duration) return end();
+  } else $("tVal").textContent = elapsed.toFixed(1);
 
   const W = field.clientWidth, H = field.clientHeight;
   for (const t of [...targets]) {
-    const age = now - t.born;
-    if (S.lifetime > 0 && age >= S.lifetime) { removeTarget(t); expired++; queueSpawn(); continue; }
-    if (S.speed > 0) {
+    if (C.kind !== "track" && C.lifetime > 0 && t.lit && now - t.litAt >= C.lifetime) {
+      expired++;
+      if (C.kind === "switch") { unlight(t); lightRandom(t); }
+      else { removeTarget(t); queueSpawn(); continue; }
+    }
+    if (C.speed > 0) {
+      if (C.kind === "track" && now >= t.nextTurn) {
+        const a = Math.atan2(t.vy, t.vx) + (rand() - 0.5) * Math.PI * 1.6;
+        t.vx = Math.cos(a) * C.speed; t.vy = Math.sin(a) * C.speed;
+        t.nextTurn = now + C.turnEvery * (0.6 + rand() * 0.8);
+      }
       const r = t.size / 2;
       t.x += t.vx * dt; t.y += t.vy * dt;
-      if (t.x < r || t.x > W - r) { t.vx *= -1; t.x = Math.min(W - r, Math.max(r, t.x)); }
-      if (t.y < r || t.y > H - r) { t.vy *= -1; t.y = Math.min(H - r, Math.max(r, t.y)); }
+      if (t.x < r || t.x > W - r) { t.vx *= -1; t.x = clamp(t.x, r, W - r); }
+      if (t.y < r || t.y > H - r) { t.vy *= -1; t.y = clamp(t.y, r, H - r); }
       place(t);
     }
-    if (S.sizeMode !== "fixed") {
-      const f = Math.min(1, age / (S.lifetime || 2000));
-      const scale = S.sizeMode === "shrink" ? 1 - f * 0.75 : 0.25 + f * 0.75;
-      t.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    if (C.kind !== "track" && C.sizeMode !== "fixed" && t.lit) {
+      const f = Math.min(1, (now - t.litAt) / (C.lifetime || 2000));
+      setScale(t, C.sizeMode === "shrink" ? 1 - f * 0.75 : 0.25 + f * 0.75);
     }
+  }
+  if (C.kind === "track") {
+    const t = targets[0];
+    const on = !!t && cx !== null && Math.hypot(t.x - cx, t.y - cy) <= t.size / 2 && (!C.holdToTrack || held);
+    trackTime += dt;
+    if (on) { onTime += dt; streak += dt; bestStreak = Math.max(bestStreak, streak); } else streak = 0;
+    if (t) t.el.classList.toggle("on", on);
+    updateHud();
   }
   requestAnimationFrame(loop);
 }
 
-// ---------- start / end ----------
-function updateHud() {
-  $("hHits").textContent = hits;
-  $("hMiss").textContent = misses;
-  $("hAcc").textContent = hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–";
+function setSlot(i, label, value) {
+  const el = $("s" + i);
+  el.hidden = label === null;
+  if (label !== null) { el.firstElementChild.textContent = label; el.lastElementChild.textContent = value; }
 }
-function start() {
+function updateHud() {
+  if (C && C.kind === "track") {
+    setSlot(1, "On target", (trackTime ? onTime / trackTime * 100 : 0).toFixed(1) + "%");
+    setSlot(2, "Streak", streak.toFixed(1) + "s");
+    setSlot(3, null);
+  } else {
+    setSlot(1, "Hits", hits);
+    setSlot(2, "Misses", misses);
+    setSlot(3, "Accuracy", hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–");
+  }
+}
+
+// ---------- start / end ----------
+function start(daily = false) {
+  if (running) return;
   readForm();
-  hits = misses = expired = 0; reactions = [];
+  isDaily = daily;
+  C = normalize(daily ? { ...S, ...dailySetup() } : { ...S });
+  rand = daily ? mulberry32(hashStr(todayKey() + "-spawns")) : Math.random;
+  hits = misses = expired = 0; reactions = []; onTime = trackTime = streak = bestStreak = 0;
   targets.forEach(t => t.el.remove()); targets = [];
-  $("hTimeLabel").textContent = S.mode === "time" ? "Time left" : "Time";
+  $("tLbl").textContent = C.mode === "time" ? "Time left" : "Time";
   overlay.style.display = "none";
   $("stop").style.display = "inline-block";
+  const custom = S.xStyle !== "system" || S.lock;
+  field.style.cursor = custom ? "none" : "crosshair";
+  $("xhair").style.display = custom ? "block" : "none";
+  cx = field.clientWidth / 2; cy = field.clientHeight / 2; drawXhair();
   running = true;
+  if (S.lock && field.requestPointerLock) {
+    try { const p = field.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch {}
+  }
   startTime = last = performance.now();
   updateHud();
-  for (let i = 0; i < S.count; i++) spawn();
+  if (C.kind === "switch") { for (let i = 0; i < C.count; i++) spawn(false); lightRandom(); }
+  else if (C.kind === "track") spawn();
+  else for (let i = 0; i < C.count; i++) spawn();
   requestAnimationFrame(loop);
 }
+document.addEventListener("pointerlockchange", () => {
+  const was = locked;
+  locked = document.pointerLockElement === field;
+  if (was && !locked && running) end();
+});
+
 function end() {
   if (!running) return;
   running = false;
+  if (locked && document.exitPointerLock) document.exitPointerLock();
   const secs = (performance.now() - startTime) / 1000;
   timeouts.forEach(clearTimeout); timeouts = [];
   targets.forEach(t => t.el.remove()); targets = [];
-  const avg = reactions.length ? reactions.reduce((a, b) => a + b, 0) / reactions.length : 0;
-  $("rHits").textContent = hits;
-  $("rMiss").textContent = misses;
-  $("rExp").textContent = expired;
-  $("rAcc").textContent = hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–";
-  $("rAvg").textContent = reactions.length ? Math.round(avg) + " ms" : "–";
-  $("rBest").textContent = reactions.length ? Math.round(Math.min(...reactions)) + " ms" : "–";
-  $("rHps").textContent = secs > 0 ? (hits / secs).toFixed(2) : "–";
-  $("rTime").textContent = secs.toFixed(1) + " s";
-  if (hits >= 3 && secs > 0) {
-    lastRun = {
-      k: setupKey(S), t: Date.now(), avg: Math.round(avg), best: Math.round(Math.min(...reactions)),
-      acc: hits + misses ? Math.round(hits / (hits + misses) * 100) : 100,
-      hps: +(hits / secs).toFixed(2), hits, misses, secs: +secs.toFixed(2)
-    };
-    recordRun(lastRun);
-  } else { lastRun = null; renderCompare(); }
+  $("xhair").style.display = "none";
+  field.style.cursor = "";
+
+  let run, shown, valid;
+  if (C.kind === "track") {
+    const pct = trackTime > 0 ? +(onTime / trackTime * 100).toFixed(2) : 0;
+    run = { kind: "track", pct, score: Math.round(pct * 100), acc: Math.round(pct), secs: +secs.toFixed(2) };
+    shown = [["Score", run.score], ["On target", pct.toFixed(1) + "%"], ["Longest streak", bestStreak.toFixed(1) + " s"], ["Time", secs.toFixed(1) + " s"]];
+    valid = secs >= 5;
+  } else {
+    const avg = reactions.length ? reactions.reduce((a, b) => a + b, 0) / reactions.length : 0;
+    const acc = hits + misses ? Math.round(hits / (hits + misses) * 100) : 100;
+    run = { kind: C.kind, hits, misses, avg: Math.round(avg), best: reactions.length ? Math.round(Math.min(...reactions)) : 0,
+      acc, hps: secs > 0 ? +(hits / secs).toFixed(2) : 0, score: Math.max(0, hits * 100 - misses * 50), secs: +secs.toFixed(2) };
+    shown = [["Score", run.score], ["Hits", hits], ["Misses", misses], ["Expired", expired],
+      ["Accuracy", hits + misses ? acc + "%" : "–"], ["Avg reaction", reactions.length ? run.avg + " ms" : "–"],
+      ["Best reaction", reactions.length ? run.best + " ms" : "–"], ["Hits per second", run.hps.toFixed(2)], ["Time", secs.toFixed(1) + " s"]];
+    valid = hits >= 3 && secs > 0;
+  }
+  run.k = setupKey(C); run.b = bucketOf(C); run.t = Date.now(); run.daily = isDaily ? todayKey() : null;
+
+  $("resTitle").textContent = isDaily ? "Last run: daily challenge" : "Last run: " + KIND_NAMES[C.kind];
+  const grid = $("resGrid");
+  grid.innerHTML = "";
+  shown.forEach(([l, v]) => {
+    const d = document.createElement("div"), s = document.createElement("span"), b = document.createElement("strong");
+    s.textContent = l; b.textContent = v; d.append(s, b); grid.appendChild(d);
+  });
   $("results").style.display = "block";
   $("stop").style.display = "none";
   overlay.style.display = "flex";
   overlay.scrollTop = 0;
+
+  if (valid) {
+    if (isDaily) {
+      const best = getDailyBest();
+      if (best === null || run.score > best) try { localStorage.setItem("aimDaily", JSON.stringify({ date: run.daily, best: run.score })); } catch {}
+      renderDaily();
+    }
+    lastRun = run;
+    scope = isDaily ? "exact" : "similar";
+    document.querySelectorAll("[data-scope]").forEach(x => x.setAttribute("aria-pressed", x.dataset.scope === scope));
+    recordRun(run);
+  } else {
+    lastRun = null;
+    renderCompare();
+    notice(C.kind === "track" ? "Runs shorter than 5 seconds aren't scored." : "Runs need at least 3 hits to be scored.");
+  }
 }
 
 let ac;
@@ -467,25 +847,11 @@ function beep() {
   } catch {}
 }
 
-
-// ---------- comparison with other players ----------
-const DIFF_KEYS = ["count", "size", "sizeVar", "lifetime", "sizeMode", "speed", "respawn", "spacing", "area", "mode", "countMisses", "missEnds"];
-const PRESET_LABELS = { default: "Default", grid: "Multi-target", precision: "Precision", flick: "Flick", reflex: "Reflex" };
-function setupKey(cfg) {
-  const parts = DIFF_KEYS.map(k => cfg[k]);
-  parts.push(cfg.mode === "time" ? cfg.duration : cfg.mode === "hits" ? cfg.goal : 0);
-  return parts.join("|");
-}
-function setupName(key) {
-  for (const [id, p] of Object.entries(PRESETS)) if (setupKey({ ...DEFAULTS, ...p }) === key) return "the " + PRESET_LABELS[id] + " preset";
-  return "this custom setup";
-}
-
+// ---------- online scoreboard ----------
 let sb = null, me = null, online = false, onlineMsg = "";
-let myRuns = [], lastRun = null, scope = "same", pool = [], board = [];
-try { myRuns = JSON.parse(localStorage.getItem("aimRuns") || "[]"); } catch {}
+let myRuns = [], lastRun = null, scope = "similar", pool = [], board = [], dailyBoard = [];
+try { myRuns = JSON.parse(localStorage.getItem("aimRuns2") || "[]"); } catch {}
 
-// player name
 const nameInput = $("playerName");
 let playerName = "";
 try { playerName = localStorage.getItem("aimName") || ""; } catch {}
@@ -499,7 +865,6 @@ nameInput.addEventListener("change", () => {
 });
 try { localStorage.setItem("aimName", playerName); } catch {}
 
-// connect: each browser gets an anonymous Supabase account that sticks around between visits
 const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !!window.supabase;
 const ready = (async () => {
   if (!configured) return;
@@ -519,61 +884,95 @@ const ready = (async () => {
 })();
 
 async function recordRun(run) {
-  myRuns = [...myRuns, run].slice(-40);
-  try { localStorage.setItem("aimRuns", JSON.stringify(myRuns)); } catch {}
+  myRuns = [...myRuns, run].slice(-60);
+  try { localStorage.setItem("aimRuns2", JSON.stringify(myRuns)); } catch {}
   pool = []; board = [];
   renderCompare(true);
   await ready;
   if (online) {
-    const { error } = await sb.from("runs").insert({
-      name: playerName, setup_key: run.k, avg_ms: run.avg, best_ms: run.best, accuracy: run.acc,
-      hps: run.hps, hits: run.hits, misses: run.misses, secs: run.secs
+    const track = run.kind === "track";
+    const { error } = await sb.from("scores").insert({
+      name: playerName, kind: run.kind, setup_key: run.k, bucket: run.b, daily: run.daily,
+      score: run.score, accuracy: run.acc, secs: run.secs,
+      hits: track ? 0 : run.hits, misses: track ? 0 : run.misses,
+      avg_ms: track ? null : run.avg, best_ms: track ? null : run.best,
+      hps: track ? null : run.hps, track_pct: track ? run.pct : null
     });
     onlineMsg = error ? "This run couldn't be saved to the scoreboard: " + error.message : "";
     run.saved = !error;
   }
-  await fetchComparison();
+  await Promise.all([fetchComparison(), run.daily ? fetchDaily() : null]);
   renderCompare();
 }
 
+const toRun = x => ({ avg: x.avg_ms, acc: x.accuracy, hps: x.hps, pct: x.track_pct == null ? null : Number(x.track_pct), score: x.score, who: x.player_id, name: x.name });
 async function fetchComparison() {
   if (!online || !lastRun) return;
-  let recent = sb.from("runs").select("player_id,name,avg_ms,accuracy,hps,created_at")
-    .order("created_at", { ascending: false }).limit(1000);
-  let top = sb.from("runs").select("player_id,name,avg_ms,accuracy,hps")
-    .order("hps", { ascending: false }).limit(300);
-  if (scope === "same") { recent = recent.eq("setup_key", lastRun.k); top = top.eq("setup_key", lastRun.k); }
+  const cols = "player_id,name,avg_ms,accuracy,hps,track_pct,score";
+  const metric = lastRun.kind === "track" ? "track_pct" : "hps";
+  let recent = sb.from("scores").select(cols).eq("kind", lastRun.kind).order("created_at", { ascending: false }).limit(1000);
+  let top = sb.from("scores").select(cols).eq("kind", lastRun.kind).order(metric, { ascending: false }).limit(300);
+  if (scope === "similar") { recent = recent.eq("bucket", lastRun.b); top = top.eq("bucket", lastRun.b); }
+  if (scope === "exact") { recent = recent.eq("setup_key", lastRun.k); top = top.eq("setup_key", lastRun.k); }
   const [r, t] = await Promise.all([recent, top]);
   if (r.error || t.error) { onlineMsg = "Couldn't load other players' runs right now."; return; }
-  const toRun = x => ({ avg: x.avg_ms, acc: x.accuracy, hps: x.hps, who: x.player_id, name: x.name });
   pool = r.data.map(toRun);
-  // take this run out of the pool so you're compared with everyone else's runs
   if (lastRun.saved) {
-    const i = pool.findIndex(x => x.who === me && x.avg === lastRun.avg && x.hps === lastRun.hps);
+    const i = pool.findIndex(x => x.who === me && x.score === lastRun.score);
     if (i >= 0) pool.splice(i, 1);
   }
   board = t.data.map(toRun);
+}
+async function fetchDaily() {
+  await ready;
+  if (online) {
+    const { data, error } = await sb.from("scores").select("player_id,name,score").eq("daily", todayKey())
+      .order("score", { ascending: false }).limit(300);
+    if (!error) { const seen = new Set(); dailyBoard = data.filter(r => !seen.has(r.player_id) && seen.add(r.player_id)); }
+  }
+  renderDailyBoard();
+}
+function renderDailyBoard() {
+  const tb = $("dBoard");
+  tb.innerHTML = "";
+  dailyBoard.slice(0, 10).forEach((r, i) => {
+    const tr = document.createElement("tr");
+    const you = r.player_id === me;
+    if (you) tr.className = "you";
+    [i + 1, r.name + (you ? " (you)" : ""), r.score].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+    tb.appendChild(tr);
+  });
+  if (!dailyBoard.length) tb.innerHTML = `<tr><td colspan="3" style="color:var(--muted)">${online ? "Nobody has played today's challenge yet." : "The online scoreboard isn't connected."}</td></tr>`;
+  const rank = dailyBoard.findIndex(r => r.player_id === me), best = getDailyBest();
+  $("dMine").textContent = (best === null ? "You haven't played today's challenge yet." : `Your best today: ${best}.`)
+    + (rank >= 0 ? ` You're #${rank + 1} of ${dailyBoard.length} players.` : "");
 }
 
 document.querySelectorAll("[data-scope]").forEach(b => b.addEventListener("click", async () => {
   scope = b.dataset.scope;
   document.querySelectorAll("[data-scope]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderCompare(true);
   await fetchComparison();
   renderCompare();
 }));
 
 function beatShare(values, mine, lowerIsBetter) {
+  values = values.filter(v => v != null);
   if (!values.length) return null;
-  const worse = values.filter(v => lowerIsBetter ? v > mine : v < mine).length;
-  return Math.round(worse / values.length * 100);
+  return Math.round(values.filter(v => lowerIsBetter ? v > mine : v < mine).length / values.length * 100);
+}
+function scopeText() {
+  if (scope === "similar") return `similar setups (${bucketLabel(lastRun.b)})`;
+  if (scope === "exact") return setupName(lastRun.k);
+  return `all ${KIND_NAMES[lastRun.kind]} runs`;
 }
 
 function renderCompare(loading) {
   const card = $("compare");
   if (!lastRun) { card.style.display = "none"; return; }
   card.style.display = "block";
-  const inScope = r => scope === "all" || r.k === lastRun.k;
-  const where = scope === "same" ? "on " + setupName(lastRun.k) : "across all setups";
+  const track = lastRun.kind === "track";
+  const inScope = r => r.kind === lastRun.kind && (scope === "all" || (scope === "similar" ? r.b === lastRun.b : r.k === lastRun.k));
 
   let cmp, rows;
   if (online) {
@@ -581,8 +980,8 @@ function renderCompare(loading) {
     const seen = new Set();
     rows = board.filter(r => !seen.has(r.who) && seen.add(r.who)).slice(0, 10);
   } else {
-    cmp = myRuns.filter(r => inScope(r) && r !== lastRun).map(r => ({ ...r, who: "me" }));
-    const best = myRuns.filter(inScope).sort((a, b) => b.hps - a.hps)[0];
+    cmp = myRuns.filter(r => inScope(r) && r.t !== lastRun.t).map(r => ({ ...r, who: "me" }));
+    const best = myRuns.filter(inScope).sort((a, b) => track ? b.pct - a.pct : b.hps - a.hps)[0];
     rows = best ? [{ ...best, who: "me" }] : [];
   }
 
@@ -591,41 +990,70 @@ function renderCompare(loading) {
   else if (online) {
     const players = new Set(cmp.map(r => r.who).filter(w => w !== me)).size;
     note = cmp.length
-      ? `Compared with the ${cmp.length} most recent run${cmp.length === 1 ? "" : "s"} ${where}, from ${players} other player${players === 1 ? "" : "s"} plus you.`
-      : `You're connected to the scoreboard, but nobody else has a run ${where} yet.`;
-  } else note = (onlineMsg || "The online scoreboard isn't set up yet, so this compares with your own earlier runs.") + ` Showing runs ${where}.`;
-  if (online && onlineMsg) note += " " + onlineMsg;
-  if (!loading && cmp.length > 0 && cmp.length < 3) note += scope === "same" ? " Not many runs to compare with yet, so try All setups." : " Not many runs to compare with yet.";
+      ? `Compared with the ${cmp.length} most recent run${cmp.length === 1 ? "" : "s"} on ${scopeText()}, from ${players} other player${players === 1 ? "" : "s"} plus you.`
+      : `Nobody else has a run on ${scopeText()} yet.`;
+    if (onlineMsg) note += " " + onlineMsg;
+  } else note = (onlineMsg || "The online scoreboard isn't set up, so this compares with your own earlier runs.") + ` Showing ${scopeText()}.`;
+  if (!loading && cmp.length > 0 && cmp.length < 3 && scope !== "all") note += " Not many runs here yet, so try Everyone for a bigger crowd.";
   $("cNote").textContent = note;
 
   const facts = $("cFacts");
   facts.innerHTML = "";
   const addFact = (label, value, share) => {
-    const li = document.createElement("li");
-    const b = document.createElement("strong");
+    const li = document.createElement("li"), b = document.createElement("strong");
     b.textContent = `${label}: ${value}. `;
     li.append(b, share === null ? "Nothing to compare with yet." : `Better than ${share}% of runs.`);
     facts.appendChild(li);
   };
-  addFact("Average reaction", lastRun.avg + " ms", beatShare(cmp.map(r => r.avg), lastRun.avg, true));
-  addFact("Accuracy", lastRun.acc + "%", beatShare(cmp.map(r => r.acc), lastRun.acc, false));
-  addFact("Hits per second", lastRun.hps.toFixed(2), beatShare(cmp.map(r => r.hps), lastRun.hps, false));
+  if (track) addFact("Time on target", lastRun.pct.toFixed(1) + "%", beatShare(cmp.map(r => r.pct), lastRun.pct, false));
+  else {
+    addFact("Average reaction", lastRun.avg + " ms", beatShare(cmp.map(r => r.avg), lastRun.avg, true));
+    addFact("Accuracy", lastRun.acc + "%", beatShare(cmp.map(r => r.acc), lastRun.acc, false));
+    addFact("Hits per second", lastRun.hps.toFixed(2), beatShare(cmp.map(r => r.hps), lastRun.hps, false));
+  }
+  if (lastRun.daily && online) {
+    const rank = dailyBoard.findIndex(r => r.player_id === me);
+    if (rank >= 0) {
+      const li = document.createElement("li"), b = document.createElement("strong");
+      b.textContent = `Daily challenge: #${rank + 1} of ${dailyBoard.length} players today.`;
+      li.append(b, " Your best score counts.");
+      facts.prepend(li);
+    }
+  }
 
   const empty = msg => `<div class="empty">${msg}</div>`;
-  $("chHist").innerHTML = cmp.length ? histogramSVG(cmp.map(r => r.avg), lastRun.avg) : empty(loading ? "Loading…" : "No other runs yet");
-  $("chScatter").innerHTML = cmp.length ? scatterSVG(cmp, lastRun) : empty(loading ? "Loading…" : "No other runs yet");
+  const noRuns = empty(loading ? "Loading…" : "No other runs yet");
+  const ms = v => Math.round(v) + " ms", pc = v => Math.round(v) + "%";
+  if (track) {
+    $("chHistTitle").textContent = "Time on target across runs";
+    const vals = cmp.map(r => r.pct).filter(v => v != null);
+    $("chHist").innerHTML = vals.length ? histogramSVG(vals, lastRun.pct, pc, "Runs per bucket, better on the right") : noRuns;
+    $("chScatterWrap").hidden = true;
+  } else {
+    $("chHistTitle").textContent = "Average reaction time across runs";
+    const vals = cmp.map(r => r.avg).filter(v => v != null);
+    $("chHist").innerHTML = vals.length ? histogramSVG(vals, lastRun.avg, ms, "Runs per bucket, faster on the left") : noRuns;
+    $("chScatterWrap").hidden = false;
+    $("chScatter").innerHTML = cmp.length ? scatterSVG(cmp.filter(r => r.avg != null), lastRun) : noRuns;
+  }
   const hist = myRuns.filter(inScope).slice(-20);
-  $("chHistory").innerHTML = hist.length >= 2 ? lineSVG(hist.map(r => r.avg)) : empty("Play a few more runs to see your trend");
+  $("chHistoryTitle").textContent = track ? "Your time on target over recent runs" : "Your reaction time over recent runs";
+  $("chHistory").innerHTML = hist.length >= 2
+    ? (track ? lineSVG(hist.map(r => r.pct), pc, "Higher is better") : lineSVG(hist.map(r => r.avg), ms, "Lower is faster"))
+    : empty("Play a few more runs to see your trend");
 
+  $("boardTitle").textContent = track ? "Top players (best time on target)" : "Top players (best hits per second)";
+  $("cHead").innerHTML = track ? "<tr><th>#</th><th>Player</th><th>On target</th></tr>"
+    : "<tr><th>#</th><th>Player</th><th>Hits/s</th><th>Avg reaction</th><th>Accuracy</th></tr>";
   const tbody = $("cBoard");
   tbody.innerHTML = "";
   rows.forEach((r, i) => {
     const tr = document.createElement("tr");
     const you = r.who === me || r.who === "me";
     if (you) tr.className = "you";
-    [i + 1, you ? (online ? r.name + " (you)" : "You") : r.name, r.hps.toFixed(2), r.avg + " ms", r.acc + "%"].forEach(v => {
-      const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
-    });
+    const name = you ? (online ? r.name + " (you)" : "You") : r.name;
+    const cells = track ? [i + 1, name, r.pct.toFixed(1) + "%"] : [i + 1, name, r.hps.toFixed(2), r.avg + " ms", r.acc + "%"];
+    cells.forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
     tbody.appendChild(tr);
   });
   if (!rows.length) tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${loading ? "Loading…" : "No runs yet"}</td></tr>`;
@@ -643,14 +1071,14 @@ function frame(xLabels, yLabels, xTitle) {
 }
 function range(vals, padFrac = 0.05) {
   let lo = Math.min(...vals), hi = Math.max(...vals);
-  if (hi - lo < 1) { lo -= 50; hi += 50; }
+  if (hi - lo < 1) { lo -= 5; hi += 5; }
   const p = (hi - lo) * padFrac;
   return [Math.max(0, lo - p), hi + p];
 }
-function histogramSVG(values, mine) {
+function histogramSVG(values, mine, fmt, xTitle) {
   const [lo, hi] = range([...values, mine], 0.02), bins = 12, bw = (hi - lo) / bins;
   const counts = Array(bins).fill(0);
-  values.forEach(v => counts[Math.min(bins - 1, Math.floor((v - lo) / bw))]++);
+  values.forEach(v => counts[clamp(Math.floor((v - lo) / bw), 0, bins - 1)]++);
   const maxC = Math.max(1, ...counts), iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
   const x = v => PAD.l + (v - lo) / (hi - lo) * iw;
   let out = "";
@@ -660,46 +1088,50 @@ function histogramSVG(values, mine) {
   });
   const mx = x(mine);
   out += `<line x1="${mx}" y1="${PAD.t}" x2="${mx}" y2="${H - PAD.b}" stroke="var(--accent)" stroke-width="3"/>`;
-  out += `<text x="${Math.min(W - PAD.r - 20, Math.max(PAD.l + 20, mx))}" y="${PAD.t - 4}" text-anchor="middle" font-size="14" font-weight="500" fill="var(--accent)">You</text>`;
-  out += frame([[x(lo), Math.round(lo) + " ms"], [x((lo + hi) / 2), Math.round((lo + hi) / 2) + " ms"], [x(hi), Math.round(hi) + " ms"]],
-               [[PAD.t, maxC], [H - PAD.b, 0]], "Runs per bucket, faster on the left");
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Histogram of average reaction times with your run marked">${out}</svg>`;
+  out += `<text x="${clamp(mx, PAD.l + 20, W - PAD.r - 20)}" y="${PAD.t - 4}" text-anchor="middle" font-size="14" font-weight="500" fill="var(--accent)">You</text>`;
+  out += frame([[x(lo), fmt(lo)], [x((lo + hi) / 2), fmt((lo + hi) / 2)], [x(hi), fmt(hi)]], [[PAD.t, maxC], [H - PAD.b, 0]], xTitle);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Histogram of runs with your run marked">${out}</svg>`;
 }
 function scatterSVG(pool, mine) {
   const [lo, hi] = range([...pool.map(r => r.avg), mine.avg]);
   const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
   const x = v => PAD.l + (v - lo) / (hi - lo) * iw, y = a => H - PAD.b - a / 100 * ih;
   let out = "";
-  pool.slice(-600).forEach(r => out += `<circle cx="${x(r.avg)}" cy="${y(r.acc)}" r="4.5" fill="var(--muted)" opacity="0.5"/>`);
+  pool.slice(0, 600).forEach(r => out += `<circle cx="${x(r.avg)}" cy="${y(r.acc)}" r="4.5" fill="var(--muted)" opacity="0.5"/>`);
   out += `<circle cx="${x(mine.avg)}" cy="${y(mine.acc)}" r="8" fill="var(--accent)" stroke="var(--text)" stroke-width="2"/>`;
   out += frame([[x(lo), Math.round(lo) + " ms"], [x(hi), Math.round(hi) + " ms"]],
-               [[y(100), "100%"], [y(50), "50%"], [y(0), "0%"]], "Reaction time (bottom right is slow and inaccurate)");
+    [[y(100), "100%"], [y(50), "50%"], [y(0), "0%"]], "Reaction time (top left is fast and accurate)");
   return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of reaction time against accuracy with your run highlighted">${out}</svg>`;
 }
-function lineSVG(vals) {
+function lineSVG(vals, fmt, title) {
   const [lo, hi] = range(vals, 0.15);
   const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
   const x = i => PAD.l + i / (vals.length - 1) * iw, y = v => H - PAD.b - (v - lo) / (hi - lo) * ih;
-  const pts = vals.map((v, i) => `${x(i)},${y(v)}`).join(" ");
-  let out = `<polyline points="${pts}" fill="none" stroke="var(--muted)" stroke-width="2.5"/>`;
+  let out = `<polyline points="${vals.map((v, i) => `${x(i)},${y(v)}`).join(" ")}" fill="none" stroke="var(--muted)" stroke-width="2.5"/>`;
   vals.forEach((v, i) => {
-    const last = i === vals.length - 1;
-    out += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 7 : 4}" fill="${last ? "var(--accent)" : "var(--muted)"}"/>`;
+    const lastPt = i === vals.length - 1;
+    out += `<circle cx="${x(i)}" cy="${y(v)}" r="${lastPt ? 7 : 4}" fill="${lastPt ? "var(--accent)" : "var(--muted)"}"/>`;
   });
-  out += frame([[x(0), "Older"], [x(vals.length - 1), "Latest"]],
-               [[y(hi), Math.round(hi) + " ms"], [y(lo), Math.round(lo) + " ms"]], "Lower is faster");
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your recent average reaction times">${out}</svg>`;
+  out += frame([[x(0), "Older"], [x(vals.length - 1), "Latest"]], [[y(hi), fmt(hi)], [y(lo), fmt(lo)]], title);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your recent runs">${out}</svg>`;
 }
 
-$("start").addEventListener("click", start);
+// ---------- wiring ----------
+document.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click", () => start(false)));
+$("dPlay").addEventListener("click", () => start(true));
 $("stop").addEventListener("click", end);
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") end();
   if (e.code === "Space" && !running && !["INPUT", "SELECT", "BUTTON"].includes(document.activeElement.tagName)) {
-    e.preventDefault(); start();
+    e.preventDefault(); start(false);
   }
 });
+
 fillForm();
+renderPresets();
+loadSharedSetup();
+renderDaily();
+setInterval(() => { if (!running) renderDaily(); }, 30000);
 </script>
 </body>
 </html>
