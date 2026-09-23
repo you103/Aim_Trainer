@@ -116,6 +116,10 @@
   .daily-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.75rem; align-items: start; }
   #dDesc { margin: 0.2rem 0 0.8rem; font-size: 1.05rem; max-width: 60ch; }
   .tabpane { display: grid; gap: 1.25rem; }
+  .panel.wide { max-width: 64rem; }
+  #screen-results .charts { grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); }
+  #screen-results #analysis .chart:first-child { grid-column: 1 / -1; }
+  #screen-results #analysis .chart:first-child svg { max-height: 30rem; }
   /* target skins */
   .target.diamond { border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
   .target.hex { border-radius: 0; clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); }
@@ -210,38 +214,20 @@
     <div id="fog"></div>
     <div id="bossBar"><span id="bossName"></span><div class="bar"><div id="bossFill"></div></div></div>
     <div id="overlay">
-      <div class="panel">
-        <div class="top">
-          <div>
-            <h1>Aim trainer</h1>
-            <p class="hint">Press Start or Space to play. Esc ends a run early.</p>
-          </div>
-          <div class="lvl">
-            <div class="lvl-top"><strong id="lvlName">Level 1, Rookie</strong><span id="lvlXp">0 / 100 XP</span></div>
-            <div class="bar"><div id="lvlBar"></div></div>
-            <span id="lvlNext"></span>
-          </div>
-          <button class="primary big" data-start>Start</button>
-        </div>
-
+      <div class="panel" id="panel">
         <div id="notice" role="status" hidden></div>
 
-        <div class="tabs" role="tablist">
-          <button role="tab" data-tab="play" aria-selected="true">Play</button>
-          <button role="tab" data-tab="campaign" aria-selected="false">Campaign <span id="campStars"></span></button>
-          <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
-          <button role="tab" data-tab="badges" aria-selected="false">Achievements <span id="badgeCount"></span></button>
-          <button role="tab" data-tab="unlocks" aria-selected="false">Unlocks</button>
-        </div>
-
-        <div class="tabpane" id="tab-play">
-        <section class="card" id="challengeCard" hidden>
-          <h2>You've been challenged</h2>
-          <p id="chText"></p>
-          <p class="hint" id="chSetup"></p>
-          <div class="row sub"><button class="primary" id="chAccept">Accept challenge</button><button id="chDismiss">Not now</button></div>
-        </section>
-
+        <div class="tabpane" id="screen-results" hidden>
+          <div class="top">
+            <div>
+              <h1 id="rsHeading">Run results</h1>
+              <p class="hint">Press Space to play again, or Esc to go back to the menu.</p>
+            </div>
+            <div class="row">
+              <button id="backMenu">Back to menu</button>
+              <button class="primary big" id="playAgain">Play again</button>
+            </div>
+          </div>
         <section class="card" id="results" aria-live="polite">
           <h2 id="resTitle">Last run</h2>
           <div class="res" id="resGrid"></div>
@@ -286,6 +272,41 @@
             <h3 id="boardTitle">Top players</h3>
             <table><thead id="cHead"></thead><tbody id="cBoard"></tbody></table>
           </div>
+        </section>
+
+        </div>
+
+        <div class="tabpane" id="screen-menu">
+        <div class="top">
+          <div>
+            <h1>Aim trainer</h1>
+            <p class="hint">Press Start or Space to play. Esc ends a run early.</p>
+          </div>
+          <div class="lvl">
+            <div class="lvl-top"><strong id="lvlName">Level 1, Rookie</strong><span id="lvlXp">0 / 100 XP</span></div>
+            <div class="bar"><div id="lvlBar"></div></div>
+            <span id="lvlNext"></span>
+          </div>
+          <div class="row">
+            <button id="viewLast" hidden>Last results</button>
+            <button class="primary big" data-start>Start</button>
+          </div>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button role="tab" data-tab="play" aria-selected="true">Play</button>
+          <button role="tab" data-tab="campaign" aria-selected="false">Campaign <span id="campStars"></span></button>
+          <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
+          <button role="tab" data-tab="badges" aria-selected="false">Achievements <span id="badgeCount"></span></button>
+          <button role="tab" data-tab="unlocks" aria-selected="false">Unlocks</button>
+        </div>
+
+        <div class="tabpane" id="tab-play">
+        <section class="card" id="challengeCard" hidden>
+          <h2>You've been challenged</h2>
+          <p id="chText"></p>
+          <p class="hint" id="chSetup"></p>
+          <div class="row sub"><button class="primary" id="chAccept">Accept challenge</button><button id="chDismiss">Not now</button></div>
         </section>
 
         <section class="card">
@@ -488,6 +509,7 @@
             <p class="hint" id="badgeSummary"></p>
             <div class="badges sub" id="badgeGrid"></div>
           </section>
+        </div>
         </div>
       </div>
     </div>
@@ -1252,6 +1274,7 @@ document.addEventListener("pointerlockchange", () => {
 function end() {
   if (!running) return;
   running = false;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (locked && document.exitPointerLock) document.exitPointerLock();
   const secs = (performance.now() - startTime) / 1000;
   timeouts.forEach(clearTimeout); timeouts = [];
@@ -1293,6 +1316,7 @@ function end() {
 
   $("resStage").hidden = true; $("resStory").hidden = true; $("nextStage").hidden = true; $("toCampaign").hidden = true;
   $("replay").textContent = activeStage ? "Retry stage" : "Replay the same targets";
+  $("rsHeading").textContent = activeStage ? (activeStage.boss ? "Boss results" : "Stage results") : isDaily ? "Daily challenge results" : activeChallenge ? "Challenge results" : "Run results";
   $("resTitle").textContent = activeStage ? `Stage ${activeStage.id}: ${stageName(activeStage)}` : isDaily ? "Last run: daily challenge" : activeChallenge ? `Last run: challenge from ${activeChallenge.name}` : "Last run: " + run.lbl;
   const grid = $("resGrid");
   grid.innerHTML = "";
@@ -1304,8 +1328,7 @@ function end() {
   $("stop").style.display = "none";
   $("resPb").hidden = true; $("resChallenge").hidden = true; $("resXp").textContent = "";
   overlay.style.display = "flex";
-  showTab("play");
-  overlay.scrollTop = 0;
+  showScreen("results");
 
   if (activeStage) return finishStage(run);
   if (!valid) {
@@ -1886,7 +1909,7 @@ function renderCampaign() {
 }
 $("stStart").addEventListener("click", () => { if (selStage && stageUnlocked(selStage)) start(false, { campaign: selStage }); });
 $("nextStage").addEventListener("click", () => { const n = lastPlay && lastPlay.campaign && nextStageOf(lastPlay.campaign); if (n && stageUnlocked(n)) { selStage = n; start(false, { campaign: n }); } });
-$("toCampaign").addEventListener("click", () => showTab("campaign"));
+$("toCampaign").addEventListener("click", () => { showScreen("menu"); showTab("campaign"); });
 
 function finishStage(run) {
   const st = activeStage, stars = starsFor(st, run), before = totalStars(), prev = camp.stars[st.id] || 0;
@@ -2012,6 +2035,27 @@ function renderUnlocks() {
     });
   }
 }
+
+// ---------- screens ----------
+function showScreen(name) {
+  const res = name === "results";
+  $("screen-results").hidden = !res;
+  $("screen-menu").hidden = res;
+  $("panel").classList.toggle("wide", res);
+  if (res) $("viewLast").hidden = false;
+  overlay.scrollTop = 0;
+}
+const onResults = () => !running && !$("screen-results").hidden && overlay.style.display !== "none";
+function playAgain() {
+  if (!lastPlay) return start(false);
+  if (lastPlay.campaign) start(false, { campaign: lastPlay.campaign });
+  else if (lastPlay.daily) start(true);
+  else if (lastPlay.challenge) start(false, { setup: lastPlay.setup, seed: lastPlay.seed, challenge: lastPlay.challenge });
+  else start(false, { setup: lastPlay.setup });
+}
+$("backMenu").addEventListener("click", () => showScreen("menu"));
+$("playAgain").addEventListener("click", playAgain);
+$("viewLast").addEventListener("click", () => showScreen("results"));
 
 // ---------- tabs ----------
 function showTab(id) {
@@ -2320,9 +2364,10 @@ document.querySelectorAll("[data-start]").forEach(b => b.addEventListener("click
 $("dPlay").addEventListener("click", () => start(true));
 $("stop").addEventListener("click", end);
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") end();
+  if (e.key === "Escape") { if (running) end(); else if (onResults()) showScreen("menu"); }
   if (e.code === "Space" && !running && !["INPUT", "SELECT", "BUTTON"].includes(document.activeElement.tagName)) {
-    e.preventDefault(); start(false);
+    e.preventDefault();
+    if (onResults()) playAgain(); else start(false);
   }
 });
 
