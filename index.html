@@ -107,6 +107,11 @@
   .note { color: var(--muted); margin: 0 0 1rem; }
   .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
   .chart svg { width: 100%; height: auto; display: block; }
+  .chart svg.sq { max-width: 22rem; margin: 0 auto; }
+  .cap { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.85rem; text-align: center; display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; justify-content: center; align-items: center; }
+  .key { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 50%; margin-right: -0.5rem; vertical-align: middle; }
+  .key.hit { background: var(--accent); }
+  .key.miss { border: 2px solid var(--miss); }
   .chart .empty { color: var(--muted); font-size: 0.9rem; padding: 2rem 0; text-align: center; }
   .board { overflow-x: auto; margin-top: 1rem; }
   table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
@@ -2199,9 +2204,8 @@ function heatmapSVG(list) {
   let out = `<rect x="1" y="1" width="${w - 2}" height="${h - 2}" rx="10" fill="var(--field)" opacity="0.45" stroke="var(--line)"/>`;
   list.filter(x => !x.hit).forEach(x => out += `<circle cx="${x.x * w}" cy="${x.y * h}" r="7" fill="none" stroke="var(--miss)" stroke-width="2.5"/>`);
   list.filter(x => x.hit).forEach(x => out += `<circle cx="${x.x * w}" cy="${x.y * h}" r="6" fill="var(--accent)" opacity="0.8"/>`);
-  out += `<circle cx="14" cy="${h + 18}" r="6" fill="var(--accent)"/>` + txt(28, h + 23, "Hits", "start")
-       + `<circle cx="84" cy="${h + 18}" r="6" fill="none" stroke="var(--miss)" stroke-width="2.5"/>` + txt(98, h + 23, "Misses", "start");
-  return `<svg viewBox="0 0 ${w} ${h + 32}" role="img" aria-label="Map of where you clicked on the screen">${out}</svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Map of where you clicked on the screen">${out}</svg>`
+    + `<p class="cap"><span class="key hit"></span>Hits <span class="key miss"></span>Misses</p>`;
 }
 function targetViewSVG(list) {
   const S2 = 300, c = 150, R = 52;
@@ -2218,8 +2222,8 @@ function targetViewSVG(list) {
     const mx = c + avgOf(close.map(x => x.dx)) * R, my = c + avgOf(close.map(x => x.dy)) * R;
     out += `<path d="M${mx - 9} ${my}H${mx + 9}M${mx} ${my - 9}V${my + 9}" stroke="var(--text)" stroke-width="2.5"/>`;
   }
-  out += txt(c, S2 + 20, "Solid ring: the target. Dashed: near-miss zone. Cross: your average.");
-  return `<svg viewBox="0 0 ${S2} ${S2 + 30}" role="img" aria-label="Where your clicks landed relative to target centers">${out}</svg>`;
+  return `<svg class="sq" viewBox="0 0 ${S2} ${S2}" role="img" aria-label="Where your clicks landed relative to target centers">${out}</svg>`
+    + `<p class="cap">Solid ring: the target. Dashed ring: near-miss zone. Cross: your average click.</p>`;
 }
 function regionSVG(cells) {
   const w = 600, h = 330, cw = w / 3, ch = h / 3;
@@ -2231,8 +2235,8 @@ function regionSVG(cells) {
     out += `<rect x="${x + 3}" y="${y + 3}" width="${cw - 6}" height="${ch - 6}" rx="8" fill="${c.avg === null ? "var(--ui)" : "var(--miss)"}" fill-opacity="${c.avg === null ? 1 : 0.12 + f * 0.6}" stroke="var(--line)"/>`;
     out += `<text x="${x + cw / 2}" y="${y + ch / 2 + 7}" text-anchor="middle" font-size="20" fill="${c.avg === null ? "var(--muted)" : "var(--text)"}">${c.avg === null ? "–" : c.avg + " ms"}</text>`;
   });
-  out += txt(w / 2, h + 22, "Stronger red means slower");
-  return `<svg viewBox="0 0 ${w} ${h + 30}" role="img" aria-label="Average reaction time in each area of the screen">${out}</svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Average reaction time in each area of the screen">${out}</svg>`
+    + `<p class="cap">Stronger red means slower.</p>`;
 }
 function barsSVG(vals, maxV, yFmt, xFirst, xLast, xTitle) {
   const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b, bw = iw / Math.max(1, vals.length);
@@ -2251,8 +2255,9 @@ function trackFrameSVG(list) {
     const d = Math.hypot(x.side, x.along), k = d > 3.3 ? 3.3 / d : 1;
     out += `<circle cx="${c + x.side * k * R}" cy="${c - x.along * k * R}" r="3" fill="${x.on ? "var(--accent)" : "var(--miss)"}" opacity="${x.on ? 0.45 : 0.7}"/>`;
   });
-  out += txt(c, 16, "Ahead of the target") + txt(c, S2 - 4, "Behind the target");
-  return `<svg viewBox="0 0 ${S2} ${S2}" role="img" aria-label="Your crosshair position relative to the moving target">${out}</svg>`;
+  out += txt(c, 16, "Ahead") + txt(c, S2 - 6, "Behind");
+  return `<svg class="sq" viewBox="0 0 ${S2} ${S2}" role="img" aria-label="Your crosshair position relative to the moving target">${out}</svg>`
+    + `<p class="cap">Top is ahead of the target, bottom is behind it. Yellow: on target. Red: off target.</p>`;
 }
 
 // ---------- progress dashboard ----------
