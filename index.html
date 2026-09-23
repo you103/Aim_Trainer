@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aim Trainer</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ui: #1A2250; --ui-2: #232D66; --line: #3A4690; --text: #F2F1FF; --muted: #A9AEDD;
+    --accent: #FFC83D; --accent-ink: #2B1B00;
+    --field: #2B3A8C; --target: #FFC83D;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; }
+  }
+  :root[data-theme="light"] { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--ui); color: var(--text);
+    font-family: "Rubik", "Segoe UI", system-ui, sans-serif;
+    display: flex; flex-direction: column; user-select: none; -webkit-user-select: none;
+  }
+  header {
+    display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; align-items: center;
+    padding: 0.6rem 1.25rem; background: var(--ui); border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  header .stat { color: var(--muted); }
+  header .stat strong { color: var(--text); font-weight: 500; }
+  #stop { margin-left: auto; display: none; }
+  #field { position: relative; flex: 1; overflow: hidden; background: var(--field); touch-action: none; }
+  .target {
+    position: absolute; border-radius: 50%; background: var(--target);
+    transform: translate(-50%, -50%); will-change: transform;
+  }
+  .target.ring { background: transparent; border: 4px solid var(--target); }
+  .target.bullseye { background: radial-gradient(circle, var(--target) 0 22%, transparent 23% 45%, var(--target) 46% 100%); }
+  .pop {
+    position: absolute; border-radius: 50%; border: 2px solid var(--target);
+    transform: translate(-50%, -50%); pointer-events: none; animation: pop 0.25s ease-out forwards;
+  }
+  @keyframes pop { to { transform: translate(-50%, -50%) scale(1.8); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .pop { display: none; } }
+
+  #overlay {
+    position: absolute; inset: 0; overflow-y: auto; padding: 1.5rem 1rem;
+    background: color-mix(in srgb, var(--ui) 88%, transparent);
+    display: flex; justify-content: center; align-items: flex-start;
+  }
+  .panel { width: 100%; max-width: 44rem; display: grid; gap: 1.25rem; }
+  h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { margin: 0 0 0.6rem; font-size: 1.05rem; font-weight: 500; color: var(--muted); }
+  .hint { margin: 0.25rem 0 0; color: var(--muted); }
+  .card { background: var(--ui-2); border: 1px solid var(--line); border-radius: 14px; padding: 1rem 1.1rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)); gap: 0.85rem 1rem; }
+  label { display: grid; gap: 0.3rem; font-size: 0.95rem; }
+  label.check { display: flex; align-items: center; gap: 0.5rem; }
+  label small { color: var(--muted); font-size: 0.8rem; }
+  input[type="number"], input[type="text"], select {
+    font: inherit; padding: 0.45rem 0.6rem; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--ui); color: var(--text); width: 100%;
+  }
+  input[type="color"] { width: 100%; height: 2.3rem; border: 1px solid var(--line); border-radius: 8px; background: var(--ui); padding: 2px; }
+  input[type="checkbox"] { width: 1.1rem; height: 1.1rem; accent-color: var(--accent); }
+  button {
+    font: inherit; cursor: pointer; border-radius: 999px; padding: 0.5rem 1.1rem;
+    border: 1px solid var(--line); background: var(--ui-2); color: var(--text);
+  }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+  #start { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; font-size: 1.15rem; padding: 0.7rem 2rem; }
+  #results { display: none; }
+  .res { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 0.75rem; }
+  .res div { display: grid; gap: 0.15rem; }
+  .res span { color: var(--muted); font-size: 0.85rem; }
+  .res strong { font-size: 1.6rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  #compare { display: none; }
+  .scope { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.9rem; color: var(--muted); }
+  .scope button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .facts { margin: 0 0 1rem; padding: 0; list-style: none; display: grid; gap: 0.35rem; }
+  .facts strong { font-weight: 500; }
+  .note { color: var(--muted); margin: 0 0 1rem; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 1rem; }
+  .chart h3 { margin: 0 0 0.4rem; font-size: 0.95rem; font-weight: 500; }
+  .chart svg { width: 100%; height: auto; display: block; }
+  .chart .empty { color: var(--muted); font-size: 0.9rem; padding: 2rem 0; text-align: center; }
+  .board { overflow-x: auto; margin-top: 1rem; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+  tr.you td { color: var(--accent); font-weight: 500; }
+</style>
+</head>
+<body>
+  <header>
+    <span class="stat">Hits <strong id="hHits">0</strong></span>
+    <span class="stat">Misses <strong id="hMiss">0</strong></span>
+    <span class="stat">Accuracy <strong id="hAcc">–</strong></span>
+    <span class="stat"><span id="hTimeLabel">Time</span> <strong id="hTime">0.0</strong>s</span>
+    <button id="stop">Stop (Esc)</button>
+  </header>
+
+  <main id="field">
+    <div id="overlay">
+      <div class="panel">
+        <div>
+          <h1>Aim trainer</h1>
+          <p class="hint">Set it up how you like, then press Start or Space. Esc ends a run early.</p>
+        </div>
+
+        <section class="card">
+          <h2>Player</h2>
+          <div class="grid">
+            <label>Name on the leaderboard
+              <input type="text" id="playerName" maxlength="20" autocomplete="nickname"></label>
+          </div>
+        </section>
+
+        <section class="card" id="results" aria-live="polite">
+          <h2>Last run</h2>
+          <div class="res">
+            <div><span>Hits</span><strong id="rHits"></strong></div>
+            <div><span>Misses</span><strong id="rMiss"></strong></div>
+            <div><span>Expired</span><strong id="rExp"></strong></div>
+            <div><span>Accuracy</span><strong id="rAcc"></strong></div>
+            <div><span>Avg reaction</span><strong id="rAvg"></strong></div>
+            <div><span>Best reaction</span><strong id="rBest"></strong></div>
+            <div><span>Hits per second</span><strong id="rHps"></strong></div>
+            <div><span>Time</span><strong id="rTime"></strong></div>
+          </div>
+        </section>
+
+        <section class="card" id="compare" aria-live="polite">
+          <h2>How you compare</h2>
+          <div class="scope">Compare with
+            <button data-scope="same" aria-pressed="true">Same setup</button>
+            <button data-scope="all" aria-pressed="false">All setups</button>
+          </div>
+          <p class="note" id="cNote"></p>
+          <ul class="facts" id="cFacts"></ul>
+          <div class="charts">
+            <div class="chart"><h3>Average reaction time across runs</h3><div id="chHist"></div></div>
+            <div class="chart"><h3>Reaction time vs accuracy</h3><div id="chScatter"></div></div>
+            <div class="chart"><h3>Your reaction time over your recent runs</h3><div id="chHistory"></div></div>
+          </div>
+          <div class="board">
+            <h3 style="margin:0 0 0.4rem;font-size:0.95rem;font-weight:500">Top players (best hits per second)</h3>
+            <table>
+              <thead><tr><th>#</th><th>Player</th><th>Hits/s</th><th>Avg reaction</th><th>Accuracy</th></tr></thead>
+              <tbody id="cBoard"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Presets</h2>
+          <div class="presets">
+            <button data-preset="grid">Multi-target</button>
+            <button data-preset="precision">Precision</button>
+            <button data-preset="flick">Flick</button>
+            <button data-preset="reflex">Reflex</button>
+            <button data-preset="default">Reset to default</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Targets</h2>
+          <div class="grid">
+            <label>Targets on screen at once
+              <input type="number" data-key="count" min="1" max="30"></label>
+            <label>Target size (px)
+              <input type="number" data-key="size" min="6" max="200"></label>
+            <label>Random size variation (±px)
+              <input type="number" data-key="sizeVar" min="0" max="100"></label>
+            <label>Target lifetime (ms)
+              <input type="number" data-key="lifetime" min="0" max="10000" step="50">
+              <small>0 means targets stay until hit</small></label>
+            <label>Size over lifetime
+              <select data-key="sizeMode">
+                <option value="fixed">Stays the same</option>
+                <option value="shrink">Shrinks</option>
+                <option value="grow">Grows</option>
+              </select>
+              <small>Uses lifetime, or 2 s if lifetime is 0</small></label>
+            <label>Movement speed (px/s)
+              <input type="number" data-key="speed" min="0" max="1500" step="10">
+              <small>0 keeps targets still</small></label>
+            <label>Respawn delay (ms)
+              <input type="number" data-key="respawn" min="0" max="5000" step="50"></label>
+            <label>Min gap between targets (px)
+              <input type="number" data-key="spacing" min="0" max="300"></label>
+            <label>Spawn area (% of screen)
+              <input type="number" data-key="area" min="10" max="100" step="5">
+              <small>Smaller keeps targets near the center</small></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Session</h2>
+          <div class="grid">
+            <label>Run ends
+              <select data-key="mode">
+                <option value="time">After a set time</option>
+                <option value="hits">After a number of hits</option>
+                <option value="endless">Never (stop with Esc)</option>
+              </select></label>
+            <label>Duration (seconds)
+              <input type="number" data-key="duration" min="5" max="600"></label>
+            <label>Hit goal
+              <input type="number" data-key="goal" min="1" max="1000"></label>
+            <label class="check"><input type="checkbox" data-key="countMisses"> Count clicks on empty space as misses</label>
+            <label class="check"><input type="checkbox" data-key="missEnds"> A miss ends the run</label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Look and feel</h2>
+          <div class="grid">
+            <label>Target style
+              <select data-key="style">
+                <option value="solid">Solid dot</option>
+                <option value="ring">Ring</option>
+                <option value="bullseye">Bullseye</option>
+              </select></label>
+            <label>Target color <input type="color" data-key="targetColor"></label>
+            <label>Background color <input type="color" data-key="bgColor"></label>
+            <label>Cursor
+              <select data-key="cursor">
+                <option value="crosshair">Crosshair</option>
+                <option value="dot">Small dot</option>
+                <option value="default">Normal arrow</option>
+              </select></label>
+            <label class="check"><input type="checkbox" data-key="sound"> Sound on hit</label>
+            <label class="check"><input type="checkbox" data-key="hitEffect"> Hit effect</label>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button id="start">Start</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+<script>
+// ===== Online scoreboard settings =====
+// Paste your Supabase project URL and anon (publishable) key here.
+// Leave them as-is and the trainer still works, comparing only with your own runs.
+const SUPABASE_URL = "https://uuaulbxtygmnfardcfwx.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_MjWm0KAkShhDFun5DTLyfg_zgQRegeg";
+// ======================================
+
+const $ = id => document.getElementById(id);
+const field = $("field"), overlay = $("overlay");
+
+const DEFAULTS = {
+  count: 1, size: 50, sizeVar: 0, lifetime: 0, sizeMode: "fixed", speed: 0,
+  respawn: 0, spacing: 10, area: 100,
+  mode: "time", duration: 30, goal: 50, countMisses: true, missEnds: false,
+  style: "solid", targetColor: "#FFC83D", bgColor: "#2B3A8C", cursor: "crosshair",
+  sound: true, hitEffect: true
+};
+const PRESETS = {
+  default: {},
+  grid:      { count: 3, size: 60, spacing: 20, area: 60, duration: 60 },
+  precision: { count: 1, size: 18, area: 70, duration: 30 },
+  flick:     { count: 1, size: 45, lifetime: 1000, sizeMode: "shrink", duration: 30 },
+  reflex:    { count: 1, size: 60, lifetime: 600, respawn: 500, area: 50, duration: 30 }
+};
+
+// ---------- settings ----------
+let S = { ...DEFAULTS };
+try { Object.assign(S, JSON.parse(localStorage.getItem("aimSettings") || "{}")); } catch {}
+
+const inputs = document.querySelectorAll("[data-key]");
+function fillForm() {
+  inputs.forEach(el => {
+    const k = el.dataset.key;
+    if (el.type === "checkbox") el.checked = S[k]; else el.value = S[k];
+  });
+  applyLook();
+}
+function readForm() {
+  inputs.forEach(el => {
+    const k = el.dataset.key;
+    if (el.type === "checkbox") S[k] = el.checked;
+    else if (el.type === "number") {
+      const v = Number(el.value), lo = Number(el.min), hi = Number(el.max);
+      S[k] = isNaN(v) ? DEFAULTS[k] : Math.min(hi, Math.max(lo, v));
+    } else S[k] = el.value;
+  });
+  try { localStorage.setItem("aimSettings", JSON.stringify(S)); } catch {}
+  applyLook();
+}
+const DOT_CURSOR = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><circle cx='8' cy='8' r='3' fill='white' stroke='black' stroke-width='1.5'/></svg>") 8 8, crosshair`;
+function applyLook() {
+  document.documentElement.style.setProperty("--field", S.bgColor);
+  document.documentElement.style.setProperty("--target", S.targetColor);
+  field.style.cursor = S.cursor === "dot" ? DOT_CURSOR : S.cursor;
+}
+inputs.forEach(el => el.addEventListener("change", readForm));
+document.querySelectorAll("[data-preset]").forEach(b => b.addEventListener("click", () => {
+  S = { ...DEFAULTS, ...PRESETS[b.dataset.preset], targetColor: S.targetColor, bgColor: S.bgColor, cursor: S.cursor, style: S.style };
+  fillForm(); readForm();
+}));
+
+// ---------- game state ----------
+let running = false, startTime = 0, hits = 0, misses = 0, expired = 0;
+let reactions = [], targets = [], timeouts = [];
+
+function randomSize() {
+  return Math.max(6, S.size + (Math.random() * 2 - 1) * S.sizeVar);
+}
+function spawn() {
+  if (!running) return;
+  const W = field.clientWidth, H = field.clientHeight;
+  const size = randomSize(), r = size / 2;
+  const aw = W * S.area / 100, ah = H * S.area / 100;
+  const x0 = Math.max(r, (W - aw) / 2 + r), x1 = Math.min(W - r, (W + aw) / 2 - r);
+  const y0 = Math.max(r, (H - ah) / 2 + r), y1 = Math.min(H - r, (H + ah) / 2 - r);
+  let x, y;
+  for (let i = 0; i < 40; i++) {
+    x = x0 + Math.random() * Math.max(0, x1 - x0);
+    y = y0 + Math.random() * Math.max(0, y1 - y0);
+    if (targets.every(t => Math.hypot(t.x - x, t.y - y) >= r + t.size / 2 + S.spacing)) break;
+  }
+  const el = document.createElement("div");
+  el.className = "target" + (S.style !== "solid" ? " " + S.style : "");
+  el.style.width = el.style.height = size + "px";
+  const angle = Math.random() * Math.PI * 2;
+  const t = { el, x, y, size, born: performance.now(), vx: Math.cos(angle) * S.speed, vy: Math.sin(angle) * S.speed };
+  place(t);
+  el.addEventListener("pointerdown", e => { e.stopPropagation(); hit(t, e); });
+  field.appendChild(el);
+  targets.push(t);
+}
+function place(t) { t.el.style.left = t.x + "px"; t.el.style.top = t.y + "px"; }
+function queueSpawn() {
+  if (S.respawn > 0) timeouts.push(setTimeout(spawn, S.respawn)); else spawn();
+}
+function removeTarget(t) { t.el.remove(); targets = targets.filter(o => o !== t); }
+
+function hit(t, e) {
+  if (!running) return;
+  e.preventDefault();
+  reactions.push(performance.now() - t.born);
+  hits++;
+  if (S.hitEffect) {
+    const p = document.createElement("div");
+    p.className = "pop";
+    p.style.left = t.x + "px"; p.style.top = t.y + "px";
+    p.style.width = p.style.height = t.size + "px";
+    field.appendChild(p);
+    setTimeout(() => p.remove(), 300);
+  }
+  if (S.sound) beep();
+  removeTarget(t);
+  updateHud();
+  if (S.mode === "hits" && hits >= S.goal) return end();
+  queueSpawn();
+}
+field.addEventListener("pointerdown", () => {
+  if (!running || !S.countMisses) return;
+  misses++;
+  updateHud();
+  if (S.missEnds) end();
+});
+
+// ---------- loop ----------
+let last = 0;
+function loop(now) {
+  if (!running) return;
+  const dt = (now - last) / 1000; last = now;
+  const elapsed = (now - startTime) / 1000;
+  if (S.mode === "time") {
+    $("hTime").textContent = Math.max(0, S.duration - elapsed).toFixed(1);
+    if (elapsed >= S.duration) return end();
+  } else $("hTime").textContent = elapsed.toFixed(1);
+
+  const W = field.clientWidth, H = field.clientHeight;
+  for (const t of [...targets]) {
+    const age = now - t.born;
+    if (S.lifetime > 0 && age >= S.lifetime) { removeTarget(t); expired++; queueSpawn(); continue; }
+    if (S.speed > 0) {
+      const r = t.size / 2;
+      t.x += t.vx * dt; t.y += t.vy * dt;
+      if (t.x < r || t.x > W - r) { t.vx *= -1; t.x = Math.min(W - r, Math.max(r, t.x)); }
+      if (t.y < r || t.y > H - r) { t.vy *= -1; t.y = Math.min(H - r, Math.max(r, t.y)); }
+      place(t);
+    }
+    if (S.sizeMode !== "fixed") {
+      const f = Math.min(1, age / (S.lifetime || 2000));
+      const scale = S.sizeMode === "shrink" ? 1 - f * 0.75 : 0.25 + f * 0.75;
+      t.el.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    }
+  }
+  requestAnimationFrame(loop);
+}
+
+// ---------- start / end ----------
+function updateHud() {
+  $("hHits").textContent = hits;
+  $("hMiss").textContent = misses;
+  $("hAcc").textContent = hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–";
+}
+function start() {
+  readForm();
+  hits = misses = expired = 0; reactions = [];
+  targets.forEach(t => t.el.remove()); targets = [];
+  $("hTimeLabel").textContent = S.mode === "time" ? "Time left" : "Time";
+  overlay.style.display = "none";
+  $("stop").style.display = "inline-block";
+  running = true;
+  startTime = last = performance.now();
+  updateHud();
+  for (let i = 0; i < S.count; i++) spawn();
+  requestAnimationFrame(loop);
+}
+function end() {
+  if (!running) return;
+  running = false;
+  const secs = (performance.now() - startTime) / 1000;
+  timeouts.forEach(clearTimeout); timeouts = [];
+  targets.forEach(t => t.el.remove()); targets = [];
+  const avg = reactions.length ? reactions.reduce((a, b) => a + b, 0) / reactions.length : 0;
+  $("rHits").textContent = hits;
+  $("rMiss").textContent = misses;
+  $("rExp").textContent = expired;
+  $("rAcc").textContent = hits + misses ? Math.round(hits / (hits + misses) * 100) + "%" : "–";
+  $("rAvg").textContent = reactions.length ? Math.round(avg) + " ms" : "–";
+  $("rBest").textContent = reactions.length ? Math.round(Math.min(...reactions)) + " ms" : "–";
+  $("rHps").textContent = secs > 0 ? (hits / secs).toFixed(2) : "–";
+  $("rTime").textContent = secs.toFixed(1) + " s";
+  if (hits >= 3 && secs > 0) {
+    lastRun = {
+      k: setupKey(S), t: Date.now(), avg: Math.round(avg), best: Math.round(Math.min(...reactions)),
+      acc: hits + misses ? Math.round(hits / (hits + misses) * 100) : 100,
+      hps: +(hits / secs).toFixed(2), hits, misses, secs: +secs.toFixed(2)
+    };
+    recordRun(lastRun);
+  } else { lastRun = null; renderCompare(); }
+  $("results").style.display = "block";
+  $("stop").style.display = "none";
+  overlay.style.display = "flex";
+  overlay.scrollTop = 0;
+}
+
+let ac;
+function beep() {
+  try {
+    ac = ac || new AudioContext();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.value = 900;
+    g.gain.setValueAtTime(0.12, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.07);
+    o.connect(g).connect(ac.destination);
+    o.start(); o.stop(ac.currentTime + 0.08);
+  } catch {}
+}
+
+
+// ---------- comparison with other players ----------
+const DIFF_KEYS = ["count", "size", "sizeVar", "lifetime", "sizeMode", "speed", "respawn", "spacing", "area", "mode", "countMisses", "missEnds"];
+const PRESET_LABELS = { default: "Default", grid: "Multi-target", precision: "Precision", flick: "Flick", reflex: "Reflex" };
+function setupKey(cfg) {
+  const parts = DIFF_KEYS.map(k => cfg[k]);
+  parts.push(cfg.mode === "time" ? cfg.duration : cfg.mode === "hits" ? cfg.goal : 0);
+  return parts.join("|");
+}
+function setupName(key) {
+  for (const [id, p] of Object.entries(PRESETS)) if (setupKey({ ...DEFAULTS, ...p }) === key) return "the " + PRESET_LABELS[id] + " preset";
+  return "this custom setup";
+}
+
+let sb = null, me = null, online = false, onlineMsg = "";
+let myRuns = [], lastRun = null, scope = "same", pool = [], board = [];
+try { myRuns = JSON.parse(localStorage.getItem("aimRuns") || "[]"); } catch {}
+
+// player name
+const nameInput = $("playerName");
+let playerName = "";
+try { playerName = localStorage.getItem("aimName") || ""; } catch {}
+if (!playerName) playerName = "Player" + Math.floor(1000 + Math.random() * 9000);
+nameInput.value = playerName;
+nameInput.addEventListener("change", () => {
+  const v = nameInput.value.trim().slice(0, 20);
+  if (v) playerName = v;
+  nameInput.value = playerName;
+  try { localStorage.setItem("aimName", playerName); } catch {}
+});
+try { localStorage.setItem("aimName", playerName); } catch {}
+
+// connect: each browser gets an anonymous Supabase account that sticks around between visits
+const configured = !SUPABASE_URL.includes("YOUR-PROJECT") && !!window.supabase;
+const ready = (async () => {
+  if (!configured) return;
+  try {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      const { data, error } = await sb.auth.signInAnonymously();
+      if (error) throw error;
+      session = data.session;
+    }
+    me = session.user.id;
+    online = true;
+  } catch (e) {
+    onlineMsg = "Couldn't connect to the online scoreboard, so this compares with your own runs only.";
+  }
+})();
+
+async function recordRun(run) {
+  myRuns = [...myRuns, run].slice(-40);
+  try { localStorage.setItem("aimRuns", JSON.stringify(myRuns)); } catch {}
+  pool = []; board = [];
+  renderCompare(true);
+  await ready;
+  if (online) {
+    const { error } = await sb.from("runs").insert({
+      name: playerName, setup_key: run.k, avg_ms: run.avg, best_ms: run.best, accuracy: run.acc,
+      hps: run.hps, hits: run.hits, misses: run.misses, secs: run.secs
+    });
+    onlineMsg = error ? "This run couldn't be saved to the scoreboard: " + error.message : "";
+    run.saved = !error;
+  }
+  await fetchComparison();
+  renderCompare();
+}
+
+async function fetchComparison() {
+  if (!online || !lastRun) return;
+  let recent = sb.from("runs").select("player_id,name,avg_ms,accuracy,hps,created_at")
+    .order("created_at", { ascending: false }).limit(1000);
+  let top = sb.from("runs").select("player_id,name,avg_ms,accuracy,hps")
+    .order("hps", { ascending: false }).limit(300);
+  if (scope === "same") { recent = recent.eq("setup_key", lastRun.k); top = top.eq("setup_key", lastRun.k); }
+  const [r, t] = await Promise.all([recent, top]);
+  if (r.error || t.error) { onlineMsg = "Couldn't load other players' runs right now."; return; }
+  const toRun = x => ({ avg: x.avg_ms, acc: x.accuracy, hps: x.hps, who: x.player_id, name: x.name });
+  pool = r.data.map(toRun);
+  // take this run out of the pool so you're compared with everyone else's runs
+  if (lastRun.saved) {
+    const i = pool.findIndex(x => x.who === me && x.avg === lastRun.avg && x.hps === lastRun.hps);
+    if (i >= 0) pool.splice(i, 1);
+  }
+  board = t.data.map(toRun);
+}
+
+document.querySelectorAll("[data-scope]").forEach(b => b.addEventListener("click", async () => {
+  scope = b.dataset.scope;
+  document.querySelectorAll("[data-scope]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  await fetchComparison();
+  renderCompare();
+}));
+
+function beatShare(values, mine, lowerIsBetter) {
+  if (!values.length) return null;
+  const worse = values.filter(v => lowerIsBetter ? v > mine : v < mine).length;
+  return Math.round(worse / values.length * 100);
+}
+
+function renderCompare(loading) {
+  const card = $("compare");
+  if (!lastRun) { card.style.display = "none"; return; }
+  card.style.display = "block";
+  const inScope = r => scope === "all" || r.k === lastRun.k;
+  const where = scope === "same" ? "on " + setupName(lastRun.k) : "across all setups";
+
+  let cmp, rows;
+  if (online) {
+    cmp = pool;
+    const seen = new Set();
+    rows = board.filter(r => !seen.has(r.who) && seen.add(r.who)).slice(0, 10);
+  } else {
+    cmp = myRuns.filter(r => inScope(r) && r !== lastRun).map(r => ({ ...r, who: "me" }));
+    const best = myRuns.filter(inScope).sort((a, b) => b.hps - a.hps)[0];
+    rows = best ? [{ ...best, who: "me" }] : [];
+  }
+
+  let note;
+  if (loading) note = "Loading other players' runs…";
+  else if (online) {
+    const players = new Set(cmp.map(r => r.who).filter(w => w !== me)).size;
+    note = cmp.length
+      ? `Compared with the ${cmp.length} most recent run${cmp.length === 1 ? "" : "s"} ${where}, from ${players} other player${players === 1 ? "" : "s"} plus you.`
+      : `You're connected to the scoreboard, but nobody else has a run ${where} yet.`;
+  } else note = (onlineMsg || "The online scoreboard isn't set up yet, so this compares with your own earlier runs.") + ` Showing runs ${where}.`;
+  if (online && onlineMsg) note += " " + onlineMsg;
+  if (!loading && cmp.length > 0 && cmp.length < 3) note += scope === "same" ? " Not many runs to compare with yet, so try All setups." : " Not many runs to compare with yet.";
+  $("cNote").textContent = note;
+
+  const facts = $("cFacts");
+  facts.innerHTML = "";
+  const addFact = (label, value, share) => {
+    const li = document.createElement("li");
+    const b = document.createElement("strong");
+    b.textContent = `${label}: ${value}. `;
+    li.append(b, share === null ? "Nothing to compare with yet." : `Better than ${share}% of runs.`);
+    facts.appendChild(li);
+  };
+  addFact("Average reaction", lastRun.avg + " ms", beatShare(cmp.map(r => r.avg), lastRun.avg, true));
+  addFact("Accuracy", lastRun.acc + "%", beatShare(cmp.map(r => r.acc), lastRun.acc, false));
+  addFact("Hits per second", lastRun.hps.toFixed(2), beatShare(cmp.map(r => r.hps), lastRun.hps, false));
+
+  const empty = msg => `<div class="empty">${msg}</div>`;
+  $("chHist").innerHTML = cmp.length ? histogramSVG(cmp.map(r => r.avg), lastRun.avg) : empty(loading ? "Loading…" : "No other runs yet");
+  $("chScatter").innerHTML = cmp.length ? scatterSVG(cmp, lastRun) : empty(loading ? "Loading…" : "No other runs yet");
+  const hist = myRuns.filter(inScope).slice(-20);
+  $("chHistory").innerHTML = hist.length >= 2 ? lineSVG(hist.map(r => r.avg)) : empty("Play a few more runs to see your trend");
+
+  const tbody = $("cBoard");
+  tbody.innerHTML = "";
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+    const you = r.who === me || r.who === "me";
+    if (you) tr.className = "you";
+    [i + 1, you ? (online ? r.name + " (you)" : "You") : r.name, r.hps.toFixed(2), r.avg + " ms", r.acc + "%"].forEach(v => {
+      const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  if (!rows.length) tbody.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${loading ? "Loading…" : "No runs yet"}</td></tr>`;
+}
+
+// ---------- tiny SVG charts ----------
+const W = 600, H = 260, PAD = { l: 52, r: 16, t: 20, b: 40 };
+const txt = (x, y, s, anchor = "middle") => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-size="14" fill="var(--muted)">${s}</text>`;
+function frame(xLabels, yLabels, xTitle) {
+  let out = `<line x1="${PAD.l}" y1="${H - PAD.b}" x2="${W - PAD.r}" y2="${H - PAD.b}" stroke="var(--line)" stroke-width="2"/>`;
+  xLabels.forEach(([x, s]) => out += txt(x, H - PAD.b + 20, s));
+  yLabels.forEach(([y, s]) => out += txt(PAD.l - 8, y + 5, s, "end"));
+  if (xTitle) out += txt((PAD.l + W - PAD.r) / 2, H - 4, xTitle);
+  return out;
+}
+function range(vals, padFrac = 0.05) {
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (hi - lo < 1) { lo -= 50; hi += 50; }
+  const p = (hi - lo) * padFrac;
+  return [Math.max(0, lo - p), hi + p];
+}
+function histogramSVG(values, mine) {
+  const [lo, hi] = range([...values, mine], 0.02), bins = 12, bw = (hi - lo) / bins;
+  const counts = Array(bins).fill(0);
+  values.forEach(v => counts[Math.min(bins - 1, Math.floor((v - lo) / bw))]++);
+  const maxC = Math.max(1, ...counts), iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
+  const x = v => PAD.l + (v - lo) / (hi - lo) * iw;
+  let out = "";
+  counts.forEach((c, i) => {
+    const h = c / maxC * ih;
+    out += `<rect x="${x(lo + i * bw) + 1.5}" y="${H - PAD.b - h}" width="${iw / bins - 3}" height="${h}" rx="3" fill="var(--muted)" opacity="0.45"/>`;
+  });
+  const mx = x(mine);
+  out += `<line x1="${mx}" y1="${PAD.t}" x2="${mx}" y2="${H - PAD.b}" stroke="var(--accent)" stroke-width="3"/>`;
+  out += `<text x="${Math.min(W - PAD.r - 20, Math.max(PAD.l + 20, mx))}" y="${PAD.t - 4}" text-anchor="middle" font-size="14" font-weight="500" fill="var(--accent)">You</text>`;
+  out += frame([[x(lo), Math.round(lo) + " ms"], [x((lo + hi) / 2), Math.round((lo + hi) / 2) + " ms"], [x(hi), Math.round(hi) + " ms"]],
+               [[PAD.t, maxC], [H - PAD.b, 0]], "Runs per bucket, faster on the left");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Histogram of average reaction times with your run marked">${out}</svg>`;
+}
+function scatterSVG(pool, mine) {
+  const [lo, hi] = range([...pool.map(r => r.avg), mine.avg]);
+  const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
+  const x = v => PAD.l + (v - lo) / (hi - lo) * iw, y = a => H - PAD.b - a / 100 * ih;
+  let out = "";
+  pool.slice(-600).forEach(r => out += `<circle cx="${x(r.avg)}" cy="${y(r.acc)}" r="4.5" fill="var(--muted)" opacity="0.5"/>`);
+  out += `<circle cx="${x(mine.avg)}" cy="${y(mine.acc)}" r="8" fill="var(--accent)" stroke="var(--text)" stroke-width="2"/>`;
+  out += frame([[x(lo), Math.round(lo) + " ms"], [x(hi), Math.round(hi) + " ms"]],
+               [[y(100), "100%"], [y(50), "50%"], [y(0), "0%"]], "Reaction time (bottom right is slow and inaccurate)");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of reaction time against accuracy with your run highlighted">${out}</svg>`;
+}
+function lineSVG(vals) {
+  const [lo, hi] = range(vals, 0.15);
+  const iw = W - PAD.l - PAD.r, ih = H - PAD.t - PAD.b;
+  const x = i => PAD.l + i / (vals.length - 1) * iw, y = v => H - PAD.b - (v - lo) / (hi - lo) * ih;
+  const pts = vals.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+  let out = `<polyline points="${pts}" fill="none" stroke="var(--muted)" stroke-width="2.5"/>`;
+  vals.forEach((v, i) => {
+    const last = i === vals.length - 1;
+    out += `<circle cx="${x(i)}" cy="${y(v)}" r="${last ? 7 : 4}" fill="${last ? "var(--accent)" : "var(--muted)"}"/>`;
+  });
+  out += frame([[x(0), "Older"], [x(vals.length - 1), "Latest"]],
+               [[y(hi), Math.round(hi) + " ms"], [y(lo), Math.round(lo) + " ms"]], "Lower is faster");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Line chart of your recent average reaction times">${out}</svg>`;
+}
+
+$("start").addEventListener("click", start);
+$("stop").addEventListener("click", end);
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") end();
+  if (e.code === "Space" && !running && !["INPUT", "SELECT", "BUTTON"].includes(document.activeElement.tagName)) {
+    e.preventDefault(); start();
+  }
+});
+fillForm();
+</script>
+</body>
+</html>
