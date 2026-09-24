@@ -5,26 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Aim Trainer</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ui: #1A2250; --ui-2: #232D66; --line: #3A4690; --text: #F2F1FF; --muted: #A9AEDD;
-    --accent: #FFC83D; --accent-ink: #2B1B00;
-    --field: #2B3A8C; --target: #FFC83D; --decoy: #7F89CF; --miss: #FF7A7A;
+    --ui: #0B0E13; --ui-2: #141922; --ui-3: #1B212C; --line: #262E3B; --text: #E8EDF5; --muted: #8A94A6;
+    --accent: #2FD4FF; --accent-ink: #03141C; --gold: #FFC83D;
+    --field: #10141B; --target: #FFC83D; --decoy: #5B6678; --miss: #FF4D6D;
+    --head: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
     box-sizing: border-box;
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; --miss: #D9434B; }
-  }
-  :root[data-theme="light"] { --ui: #E4E8FF; --ui-2: #F4F5FF; --line: #BCC4F0; --text: #1B2257; --muted: #525A96; --miss: #D9434B; }
   *, *::before, *::after { box-sizing: inherit; }
   [hidden] { display: none !important; }
   html, body { height: 100%; margin: 0; }
   body {
     background: var(--ui); color: var(--text);
-    font-family: "Rubik", "Segoe UI", system-ui, sans-serif;
+    font-family: "Barlow", "Segoe UI", system-ui, sans-serif;
     display: flex; flex-direction: column; user-select: none; -webkit-user-select: none;
   }
   header {
@@ -203,6 +200,107 @@
   #challengeCard { border-color: var(--accent); }
   #chText { font-size: 1.25rem; margin: 0 0 0.3rem; }
   .analysis-text { margin: 0 0 1rem; padding-left: 1.1rem; display: grid; gap: 0.35rem; }
+  /* ===== esports theme ===== */
+  body { color-scheme: dark; }
+  .panel { max-width: 72rem; }
+  .panel.wide { max-width: 72rem; }
+  body:not(.playing) header { display: none; }
+  header {
+    position: relative; justify-content: center; gap: 0.5rem 2.75rem; padding: 0.55rem 5.5rem;
+    background: linear-gradient(180deg, #0D1117, #0A0D12); border-bottom: 1px solid var(--line);
+  }
+  header .stat { display: grid; justify-items: center; line-height: 1.05; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
+  header .stat strong { font-family: var(--head); font-size: 1.75rem; font-weight: 600; letter-spacing: 0.02em; color: var(--text); }
+  header .stat.time strong { color: var(--accent); }
+  header .stat strong { text-transform: none; min-width: 3.5ch; text-align: center; }
+  #stop { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); margin: 0; font-size: 0.8rem; padding: 0.4rem 0.8rem; }
+
+  #overlay { background: rgb(8 10 14 / 0.93); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding: 1.75rem 1.25rem 3rem; }
+  h1 { font-family: var(--head); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; font-size: clamp(2.2rem, 5vw, 3.2rem); line-height: 1; display: flex; align-items: center; gap: 0.6rem; }
+  h1 .acc { color: var(--accent); }
+  h1 svg { width: 0.85em; height: 0.85em; flex: none; }
+  h2 {
+    font-family: var(--head); font-size: 0.95rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--muted); display: flex; align-items: center; gap: 0.55rem;
+  }
+  h2::before { content: ""; width: 3px; height: 1.05em; background: var(--accent); border-radius: 2px; flex: none; }
+  .world-head h2::before, .daily-head h2::before { flex: none; }
+  h3 { font-family: var(--head); font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text); }
+  .hint { color: var(--muted); }
+  .card {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%), var(--ui-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: 1.1rem 1.25rem;
+  }
+  label { color: #C3CAD6; font-size: 0.92rem; }
+  input[type="number"], input[type="text"], select {
+    background: #0C0F14; border: 1px solid var(--line); border-radius: 6px; color: var(--text); padding: 0.5rem 0.65rem;
+  }
+  input[type="number"]:hover, input[type="text"]:hover, select:hover { border-color: #3A4556; }
+  input[type="color"] { background: #0C0F14; border-radius: 6px; }
+  input[type="checkbox"] { accent-color: var(--accent); }
+  button {
+    font-family: var(--head); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.95rem;
+    border-radius: 6px; padding: 0.5rem 1.05rem; background: var(--ui-3); border: 1px solid var(--line); color: var(--text);
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, filter 0.15s;
+  }
+  button:hover { border-color: var(--accent); background: #212937; }
+  button:disabled:hover { border-color: var(--line); background: var(--ui-3); }
+  .primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 700; }
+  .primary:hover { background: var(--accent); filter: brightness(1.08); box-shadow: 0 0 22px rgb(47 212 255 / 0.35); }
+  .big { font-size: 1.2rem; padding: 0.75rem 2.3rem; letter-spacing: 0.12em; }
+  .seg button[aria-pressed="true"], .scope button[aria-pressed="true"] { background: rgb(47 212 255 / 0.14); color: var(--accent); border-color: var(--accent); }
+  .chip { border-radius: 6px; }
+  #notice { background: rgb(47 212 255 / 0.12); color: var(--text); border: 1px solid var(--accent); border-radius: 8px; }
+
+  .top { align-items: center; padding-bottom: 0.25rem; }
+  .lvl { background: var(--ui-2); border: 1px solid var(--line); border-radius: 8px; padding: 0.6rem 0.8rem; }
+  .lvl-top strong { font-family: var(--head); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .bar { height: 6px; background: #0C0F14; border-color: var(--line); }
+  .bar > div { background: linear-gradient(90deg, #1A9FD0, var(--accent)); box-shadow: 0 0 10px rgb(47 212 255 / 0.6); }
+
+  .tabs button { background: transparent; border-color: transparent; color: var(--muted); }
+  .tabs button:hover { color: var(--text); background: var(--ui-2); border-color: var(--line); }
+  .tabs button[aria-selected="true"] { background: rgb(47 212 255 / 0.1); color: var(--accent); border-color: rgb(47 212 255 / 0.5); }
+  @media (min-width: 960px) {
+    #screen-menu { grid-template-columns: 12rem minmax(0, 1fr); column-gap: 1.5rem; align-items: start; }
+    #screen-menu > .top { grid-column: 1 / -1; }
+    #screen-menu > .tabs { grid-column: 1; grid-row: 2 / span 30; flex-direction: column; position: sticky; top: 0; }
+    #screen-menu > .tabpane { grid-column: 2; }
+    .tabs button { text-align: left; padding: 0.7rem 0.9rem; border-left: 3px solid transparent; border-radius: 0 6px 6px 0; }
+    .tabs button[aria-selected="true"] { border-left-color: var(--accent); border-top-color: transparent; border-right-color: transparent; border-bottom-color: transparent; }
+  }
+
+  .res { gap: 0.6rem; }
+  .res { grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); }
+  .res div { background: #0F1319; border: 1px solid var(--line); border-radius: 6px; padding: 0.65rem 0.8rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.35rem; }
+  .res strong { white-space: nowrap; }
+  .res span { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.7rem; }
+  .res strong { font-family: var(--head); font-size: 2rem; font-weight: 600; line-height: 1.05; }
+  #resGrid div:first-child strong { color: var(--accent); }
+  .pb { color: var(--gold); font-family: var(--head); font-size: 1.15rem; letter-spacing: 0.04em; }
+  table { font-size: 0.95rem; }
+  th { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem; }
+  tbody tr:hover td { background: rgb(255 255 255 / 0.025); }
+  tr.you td { color: var(--accent); }
+  .chart { background: #0F1319; border: 1px solid var(--line); border-radius: 8px; padding: 0.8rem; }
+
+  .badge, .item { background: #0F1319; border-radius: 8px; }
+  .badge .got { color: var(--gold); }
+  .item.equipped { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .stage { background: #0F1319; font-family: "Barlow", sans-serif; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 0.95rem; }
+  .stage small { font-family: var(--head); text-transform: uppercase; letter-spacing: 0.1em; }
+  .stage .st, .world-head span, #campStars { color: var(--gold); }
+  .stage.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 18px rgb(47 212 255 / 0.2); }
+  .stage.bosst { border-color: rgb(255 77 109 / 0.6); }
+  #stageCard, #challengeCard { border-color: rgb(47 212 255 / 0.55); }
+  .toast { background: #121720; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; font-size: 0.88rem; padding: 0.6rem 0.9rem; max-width: 18rem; }
+  .toast strong { font-size: 0.95rem; }
+  .toast strong { color: var(--accent); font-family: var(--head); text-transform: uppercase; letter-spacing: 0.08em; }
+  .floaty { font-family: var(--head); }
+  #bossBar { font-family: var(--head); text-transform: uppercase; letter-spacing: 0.14em; font-size: 1.05rem; }
+  #bossBar .bar { height: 0.7rem; border-radius: 3px; }
+  #bossBar .bar > div { background: linear-gradient(90deg, #C8163F, var(--miss)); box-shadow: 0 0 12px rgb(255 77 109 / 0.6); }
+  #xPreview { border-radius: 8px; }
 </style>
 </head>
 <body>
@@ -210,7 +308,7 @@
     <span class="stat" id="s1"><span>Hits</span> <strong>0</strong></span>
     <span class="stat" id="s2"><span>Misses</span> <strong>0</strong></span>
     <span class="stat" id="s3"><span>Accuracy</span> <strong>–</strong></span>
-    <span class="stat"><span id="tLbl">Time</span> <strong id="tVal">0.0</strong>s</span>
+    <span class="stat time"><span id="tLbl">Time</span><strong><span id="tVal">0.0</span>s</strong></span>
     <button id="stop">Stop (Esc)</button>
   </header>
 
@@ -284,7 +382,7 @@
         <div class="tabpane" id="screen-menu">
         <div class="top">
           <div>
-            <h1>Aim trainer</h1>
+            <h1><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--accent)" stroke-width="2.2"/><path d="M12 1v6M12 17v6M1 12h6M17 12h6" stroke="var(--accent)" stroke-width="2.2"/><circle cx="12" cy="12" r="1.8" fill="var(--text)"/></svg><span><span class="acc">Aim</span> Trainer</span></h1>
             <p class="hint">Press Start or Space to play. Esc ends a run early.</p>
           </div>
           <div class="lvl">
@@ -574,7 +672,7 @@ const SETUP_DEFAULTS = {
   extras: false, goldChance: 10, bombChance: 10
 };
 const LOOK_DEFAULTS = {
-  style: "solid", targetColor: "#FFC83D", decoyColor: "#7F89CF", bgColor: "#2B3A8C", sound: true, hitEffect: true,
+  style: "solid", targetColor: "#FFC83D", decoyColor: "#5B6678", bgColor: "#10141B", sound: true, hitEffect: true,
   xStyle: "crossdot", xColor: "#FFFFFF", xSize: 8, xThick: 2, xGap: 4, xOutline: true, lock: false, sens: 1,
   hitSound: "beep", bg: "color", bgDim: 30
 };
@@ -605,6 +703,8 @@ try {
   const saved = JSON.parse(localStorage.getItem("aimSettings") || "{}");
   for (const k in ALL_DEFAULTS) if (k in saved && typeof saved[k] === typeof ALL_DEFAULTS[k]) S[k] = saved[k];
 } catch {}
+if (S.bgColor.toUpperCase() === "#2B3A8C") S.bgColor = LOOK_DEFAULTS.bgColor;
+if (S.decoyColor.toUpperCase() === "#7F89CF") S.decoyColor = LOOK_DEFAULTS.decoyColor;
 
 const inputs = document.querySelectorAll("[data-key]");
 function fillForm() {
@@ -1253,6 +1353,7 @@ function updateHud() {
 function start(daily = false, opts = {}) {
   if (running) return;
   readForm();
+  document.body.classList.add("playing");
   isDaily = daily;
   const stage = !daily && opts.campaign ? opts.campaign : null;
   C = normalize(daily ? { ...S, ...dailySetup() } : stage ? { ...S, ...SETUP_DEFAULTS, ...stage.setup } : opts.setup ? { ...S, ...opts.setup } : { ...S });
@@ -1297,6 +1398,7 @@ document.addEventListener("pointerlockchange", () => {
 function end() {
   if (!running) return;
   running = false;
+  document.body.classList.remove("playing");
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (locked && document.exitPointerLock) document.exitPointerLock();
   const secs = (performance.now() - startTime) / 1000;
